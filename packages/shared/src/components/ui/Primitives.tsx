@@ -174,8 +174,8 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
     <th
       scope="col"
       className={cn(
-        'border-b border-border-subtle bg-surface-muted/60 px-4 py-3 text-start',
-        'text-[0.7rem] font-semibold tracking-wide text-muted uppercase whitespace-nowrap',
+        'border-b border-border-subtle bg-surface-muted/50 px-4 py-2.5 text-start',
+        'text-[0.68rem] leading-normal font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap',
         className,
       )}
     >
@@ -186,7 +186,7 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
 
 export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <td className={cn('border-b border-border-subtle px-4 py-3.5 align-middle', className)}>
+    <td className={cn('border-b border-border-subtle px-4 py-3 align-middle leading-snug', className)}>
       {children}
     </td>
   );

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { Readex_Pro } from 'next/font/google';
 
 import { ThemeProvider, themeScript } from '@hagamra/shared/components/ui/Theme';
 import { ToastProvider } from '@hagamra/shared/components/ui/Toast';
@@ -7,13 +7,17 @@ import { ToastProvider } from '@hagamra/shared/components/ui/Toast';
 import './globals.css';
 
 /**
- * IBM Plex Sans Arabic covers Arabic and Latin in one family, so a company
- * name in Arabic and an email in Latin sit on the same baseline instead of
- * falling back to two unrelated fonts.
+ * One family for both scripts, so a company name in Arabic and an e-mail in
+ * Latin sit on the same baseline instead of falling back to two unrelated
+ * fonts mid-sentence.
+ *
+ * Readex Pro is a variable font, which is why no weight list is given: every
+ * weight between 200 and 700 is available from a single file, so a heading can
+ * be 650 rather than rounded to the nearest one that happened to be
+ * downloaded.
  */
-const arabic = IBM_Plex_Sans_Arabic({
+const arabic = Readex_Pro({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '500', '600', '700'],
   variable: '--font-arabic',
   display: 'swap',
 });

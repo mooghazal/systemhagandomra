@@ -71,7 +71,7 @@ export function Shell({
           // The seam goes on the rail's inline end — its left in Arabic, its
           // right in a left-to-right locale — which a fixed-offset shadow
           // cannot express.
-          className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-rail-raised bg-rail lg:flex"
+          className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-rail-raised bg-rail bg-rail-gradient lg:flex"
         >
           <RailBrand title={brandTitle} subtitle={brandSubtitle} />
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -89,7 +89,7 @@ export function Shell({
             />
             {/* The inline start, so the drawer arrives from the same side the
                 permanent rail occupies on a wider screen. */}
-            <aside className="fixed inset-y-0 start-0 z-50 flex w-72 flex-col bg-rail shadow-floating lg:hidden">
+            <aside className="fixed inset-y-0 start-0 z-50 flex w-72 flex-col bg-rail bg-rail-gradient shadow-floating lg:hidden">
               <div className="flex items-center justify-between pe-2">
                 <RailBrand title={brandTitle} subtitle={brandSubtitle} />
                 <Button

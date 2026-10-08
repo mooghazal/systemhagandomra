@@ -38,11 +38,17 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   /*
-   * Everything except Next's own assets and this app's API routes.
+   * Everything except Next's own assets, this app's API routes, and the
+   * files the browser fetches on its own.
    *
    * The API routes are excluded because they answer with a 401 of their own;
    * redirecting a fetch() to an HTML login page would hand the client markup
    * where it expected JSON.
+   *
+   * icon.svg is excluded because the browser asks for it without a session —
+   * most visibly on the login page, where there is not supposed to be one.
+   * Without it the tab icon redirected to /login and the tab sat blank on the
+   * one screen every visitor starts from.
    */
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|icon\.svg|favicon\.ico).*)'],
 };

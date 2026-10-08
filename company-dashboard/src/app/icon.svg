@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    The browser-tab mark. Next serves any src/app/icon.svg as the favicon, so
+    this file is the whole wiring.
+
+    It carries its own background because a favicon has no parent to inherit
+    one from, and the green square is what makes it findable in a row of
+    twenty tabs. The geometry matches LogoMark exactly — a tab icon that is a
+    near-miss of the real mark looks like a mistake.
+  -->
+  <rect width="32" height="32" rx="7" fill="#0a6e45"/>
+  <g transform="translate(16 16) scale(0.78) translate(-16 -16)">
+    <path d="M22.5 27.2A12.6 12.6 0 1 1 28.6 16" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <rect x="11.25" y="11.25" width="9.5" height="9.5" rx="2.25" fill="#ffffff"/>
+  </g>
+</svg>

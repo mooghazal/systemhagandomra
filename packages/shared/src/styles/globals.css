@@ -13,13 +13,13 @@
   color-scheme: light;
 
   /* Surfaces, from furthest back to nearest the reader. */
-  --background: #f6f8f7;
+  --background: #eef2f0;
   --surface: #ffffff;
-  --surface-muted: #f2f5f3;
-  --surface-sunken: #eaefec;
+  --surface-muted: #f4f7f5;
+  --surface-sunken: #e7edea;
 
-  --border: #e3e9e5;
-  --border-strong: #cfd9d3;
+  --border: #dfe6e2;
+  --border-strong: #c6d2cc;
 
   /* Text, in three weights of emphasis. */
   --foreground: #0d1b14;
@@ -41,11 +41,14 @@
    * The navigation rail. Dark in both themes — it anchors the page, and a
    * light sidebar against a light canvas leaves the eye nothing to hold.
    */
-  --rail: #0c1f17;
-  --rail-raised: #142b21;
-  --rail-foreground: #dfe9e3;
-  --rail-muted: #8aa497;
-  --rail-active: #1b3a2c;
+  --rail: #0a1d15;
+  --rail-raised: #152d22;
+  --rail-foreground: #e4efe9;
+  --rail-muted: #8ba699;
+  --rail-active: #1c3d2d;
+  /* A gradient rather than a fill: the rail is the tallest element on the
+     page and a flat colour over that height reads as a cut-out. */
+  --rail-gradient: linear-gradient(170deg, #0d231a 0%, #0a1d15 55%, #081811 100%);
 
   --danger: #b3261e;
   --danger-hover: #8c1d17;
@@ -108,13 +111,13 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --background: #080d0a;
-  --surface: #111915;
-  --surface-muted: #171f1a;
-  --surface-sunken: #0d1410;
+  --background: #070c09;
+  --surface: #121a16;
+  --surface-muted: #19231d;
+  --surface-sunken: #0e1511;
 
-  --border: #222e27;
-  --border-strong: #324038;
+  --border: #243029;
+  --border-strong: #35443b;
 
   --foreground: #e7efea;
   --muted-strong: #a9bbb1;
@@ -127,6 +130,7 @@
   --primary-foreground: #04150d;
 
   --rail: #0e1712;
+  --rail-gradient: linear-gradient(170deg, #111d17 0%, #0e1712 55%, #0b130f 100%);
   --rail-raised: #18231d;
   --rail-foreground: #dbe7e1;
   --rail-muted: #7d9389;
@@ -189,6 +193,7 @@
   --color-primary-foreground: var(--primary-foreground);
 
   --color-rail: var(--rail);
+  --background-image-rail: var(--rail-gradient);
   --color-rail-raised: var(--rail-raised);
   --color-rail-foreground: var(--rail-foreground);
   --color-rail-muted: var(--rail-muted);
@@ -236,9 +241,40 @@ body {
   font-family: var(--font-arabic), system-ui, sans-serif;
   /* Arabic script sits lower and needs more line height than Latin to stay
      legible, especially at small sizes in table cells. */
-  line-height: 1.75;
+  line-height: 1.7;
   /* Switching themes should feel like a dimmer, not a page reload. */
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/*
+ * Headings.
+ *
+ * Arabic has no capitals, so a heading cannot be set apart by case the way an
+ * English one can — it has to earn its place through weight, size and the air
+ * around it. These are tighter than the body on both counts: a heading set at
+ * the body's line height floats away from the text it introduces and stops
+ * reading as a heading at all.
+ *
+ * The weights are fractional because the family is variable. 650 is a real
+ * weight here, not a request rounded up to bold.
+ */
+:where(h1, h2, h3, h4) {
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  font-weight: 650;
+  /* Arabic diacritics and the Latin ascenders in a mixed heading would
+     otherwise be clipped by the tight leading above. */
+  padding-block-start: 0.02em;
+}
+
+/*
+ * Figures line up in a column.
+ *
+ * Every number in this panel sits in a table, a stat tile or a page counter,
+ * and proportional digits make a column of prices look ragged.
+ */
+:where(table, .tabular, [class*='tabular']) {
+  font-variant-numeric: tabular-nums;
 }
 
 /*

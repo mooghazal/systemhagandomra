@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { cn } from '../../lib/cn';
+import { LogoMark } from '../brand/Logo';
 import { type Accent, accentStyle } from '../ui/Primitives';
 
 /**
@@ -102,14 +103,21 @@ export function Rail({
 /** The product mark at the top of the rail. */
 export function RailBrand({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <Link href="/" className="flex items-center gap-3 px-5 py-4">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-small)] bg-primary text-lg font-bold text-primary-foreground">
-        ح
+    <Link
+      href="/"
+      className="flex items-center gap-3 px-5 py-5"
+      aria-label={subtitle ? `${title} — ${subtitle}` : title}
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[0.8rem] bg-primary text-primary-foreground shadow-raised">
+        <LogoMark className="size-6" />
       </span>
+
       <span className="min-w-0">
-        <span className="block truncate text-sm font-bold text-rail-foreground">{title}</span>
+        <span className="block truncate text-[0.95rem] font-bold tracking-tight text-rail-foreground">
+          {title}
+        </span>
         {subtitle && (
-          <span className="block truncate text-[0.7rem] text-rail-muted">{subtitle}</span>
+          <span className="block truncate text-[0.72rem] text-rail-muted">{subtitle}</span>
         )}
       </span>
     </Link>

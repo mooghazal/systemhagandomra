@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Button } from '@hagamra/shared/components/ui/Button';
 import { Field, Input } from '@hagamra/shared/components/ui/Field';
 import { safeInternalPath } from '@hagamra/shared/lib/safe-redirect';
+import { LogoMark } from '@hagamra/shared/components/brand/Logo';
 import { authService } from '@hagamra/shared/services';
 
 const schema = z.object({
@@ -128,8 +129,8 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-[1.25rem] bg-primary shadow-floating">
-            <span className="text-3xl font-bold text-primary-foreground">ح</span>
+          <div className="mx-auto mb-5 flex size-[4.5rem] items-center justify-center rounded-[1.4rem] bg-primary text-primary-foreground shadow-floating">
+            <LogoMark className="size-10" title="حجامرة" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">لوحة الشركة</h1>
           <p className="mt-1 text-sm text-muted">ادخل بحساب شركتك</p>

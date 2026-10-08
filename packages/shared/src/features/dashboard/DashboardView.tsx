@@ -26,6 +26,7 @@ import {
 import { ErrorState } from '@hagamra/shared/components/ui/Feedback';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { ApiError } from '@hagamra/shared/lib/api';
+import { cn } from '@hagamra/shared/lib/cn';
 import { auditLogsService, statsService } from '@hagamra/shared/services';
 import type { AuditLog, Stats } from '@hagamra/shared/types';
 import {
@@ -43,6 +44,26 @@ import {
  * system; a company user sees their own company and never learns how many
  * other companies exist — the backend decides that, not this component.
  */
+
+/**
+ * How many tiles sit on one row once there is room for them.
+ *
+ * The count is not fixed: a super admin sees six, a company owner four, and
+ * someone with narrower permissions fewer still. Hardcoding six left the
+ * owner's fourth tile stranded alone on a second row.
+ *
+ * Written out rather than built from a template string because Tailwind
+ * generates utilities by reading the source — a class assembled at runtime
+ * never appears in the stylesheet.
+ */
+const WIDE_COLUMNS: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+  5: 'lg:grid-cols-5',
+  6: 'lg:grid-cols-6',
+};
 
 interface Tile {
   key: keyof Stats;
@@ -129,7 +150,9 @@ export function DashboardView() {
           <ErrorState message={statsError.message} forbidden={statsError.isForbidden} />
         </Card>
       ) : visibleTiles.length > 0 ? (
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div
+          className={cn('mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3', WIDE_COLUMNS[visibleTiles.length])}
+        >
           {visibleTiles.map(({ key, label, icon: Icon, href, accent }) => {
             const count = stats?.[key];
 
