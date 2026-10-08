@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { Button } from '@hagamra/shared/components/ui/Button';
 import { Field, Input } from '@hagamra/shared/components/ui/Field';
+import { safeInternalPath } from '@hagamra/shared/lib/safe-redirect';
 import { authService } from '@hagamra/shared/services';
 
 const schema = z.object({
@@ -38,10 +39,9 @@ function LoginForm() {
     try {
       await authService.login(email, password);
 
-      // Only paths from this app, never an absolute URL: a `next` parameter
-      // pointing somewhere else would turn the login into an open redirect.
-      const next = params.get('next');
-      const destination = next?.startsWith('/') && !next.startsWith('//') ? next : '/';
+      // Only paths from this app. See safeInternalPath for why this is not
+      // a string check.
+      const destination = safeInternalPath(params.get('next'), window.location.origin);
 
       // refresh() re-runs the server layout so the new session is picked up.
       router.replace(destination);

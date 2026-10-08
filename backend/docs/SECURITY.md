@@ -227,3 +227,49 @@ checked when no user exists so the timing matches.
   deliberately allow plain HTTP.
 - Booting with `APP_ENV=production` and `APP_DEBUG=true` now throws, so the
   mistake surfaces on deploy rather than in a stack trace someone else reads.
+
+### Trusted proxies — required before going behind a load balancer
+
+`bootstrap/app.php` does not call `trustProxies()`. That is deliberate while
+Laravel is reached directly: an untrusted `X-Forwarded-For` is ignored, so
+nobody can shift a rate-limit bucket or forge `audit_logs.ip_address` by
+sending one.
+
+It stops being right the moment anything sits in front — nginx, an ALB,
+Cloudflare, or the Next panel used as the single ingress. `$request->ip()`
+then returns *the proxy's* address for every request in the world, and:
+
+- the `login-ip` limiter (20/min) becomes one global bucket, so twenty failed
+  logins a minute from anyone lock out **every account on the platform** — a
+  denial of service any unauthenticated client can run by hand;
+- the `api` and `writes` limits for unauthenticated callers collapse the same
+  way;
+- every row in the audit trail records the balancer's IP, which is worth
+  nothing when someone needs to know where a change came from.
+
+So before deploying behind anything, set the proxy addresses:
+
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->trustProxies(at: ['10.0.0.0/8']);   // the balancer, not '*'
+})
+```
+
+`at: '*'` trusts whatever reaches the application and brings back the
+forgery this section exists to prevent; name the addresses.
+
+### Browser sessions expire; MCP tokens do not
+
+`SANCTUM_TOKEN_EXPIRATION` is the global setting and is left blank on
+purpose — Sanctum applies it to every token from its `created_at`, which would
+kill the MCP agent's service credential on the same schedule as a browser tab.
+
+`SESSION_TOKEN_EXPIRATION` (minutes, default 480) is applied per token by
+`AuthService` when a person signs in, so a sign-in always expires even when the
+global is unset. It previously was not: the cookie went stale after eight hours
+while the token behind it stayed valid for ever, so a copy taken from a log or
+a backup kept working indefinitely. Keep it in step with
+`SESSION_LIFETIME_MINUTES` in the two panels, which sets the cookie's own life.
+
+An MCP token still lives until `php artisan mcp:token --revoke-existing` or a
+password change revokes it. Treat it as a credential with no expiry date.

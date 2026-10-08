@@ -33,6 +33,45 @@ class AuthenticationTest extends TestCase
     }
 
     #[Test]
+    public function a_sign_in_token_always_carries_an_expiry(): void
+    {
+        $this->owner($this->company(), ['email' => 'owner@example.test', 'password' => 'correct-horse-7']);
+
+        // The global setting is what an operator is most likely to leave
+        // blank, and for a long time blank meant a session token that never
+        // expired — so a copy taken from a log or a backup kept working for
+        // ever. The browser lifetime has to stand on its own without it.
+        config(['sanctum.expiration' => null, 'sanctum.session_expiration' => 480]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'owner@example.test',
+            'password' => 'correct-horse-7',
+        ])->assertOk();
+
+        $token = PersonalAccessToken::query()->sole();
+
+        $this->assertNotNull($token->expires_at, 'A sign-in token was issued with no expiry.');
+        $this->assertTrue($token->expires_at->between(now()->addMinutes(479), now()->addMinutes(481)));
+    }
+
+    #[Test]
+    public function a_shorter_global_expiry_wins_over_the_session_lifetime(): void
+    {
+        $this->owner($this->company(), ['email' => 'owner@example.test', 'password' => 'correct-horse-7']);
+
+        config(['sanctum.expiration' => 30, 'sanctum.session_expiration' => 480]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'owner@example.test',
+            'password' => 'correct-horse-7',
+        ])->assertOk();
+
+        $token = PersonalAccessToken::query()->sole();
+
+        $this->assertTrue($token->expires_at->between(now()->addMinutes(29), now()->addMinutes(31)));
+    }
+
+    #[Test]
     public function the_login_response_never_contains_the_password_hash(): void
     {
         $this->owner($this->company(), ['email' => 'owner@example.test', 'password' => 'correct-horse-7']);
@@ -246,9 +285,46 @@ class AuthenticationTest extends TestCase
     }
 
     #[Test]
+    public function an_accented_spelling_of_an_address_shares_the_throttle_with_the_real_one(): void
+    {
+        $owner = $this->owner($this->company(), [
+            'email' => 'owner@example.test',
+            'password' => 'correct-horse-7',
+        ]);
+
+        /*
+         * The users table collates utf8mb4_unicode_ci, which ignores accents,
+         * so `öwner@example.test` finds this very row. mb_strtolower does not
+         * ignore accents, so keying the throttle on the typed string gave that
+         * spelling a bucket of its own: five guesses, change an accent, five
+         * more, for as many accents as the alphabet has. Keying on the account
+         * the address resolves to closes it by construction.
+         */
+        $this->assertTrue(
+            User::query()->where('email', 'öwner@example.test')->whereKey($owner->id)->exists(),
+            'The database no longer folds accents, so this test is checking nothing. '
+            .'Re-derive the throttle key before deleting it.',
+        );
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->postJson('/api/auth/login', [
+                'email' => 'owner@example.test',
+                'password' => 'wrong-password-1',
+            ])->assertStatus(422);
+        }
+
+        $this->assertApiError(
+            $this->postJson('/api/auth/login', [
+                'email' => 'öwner@example.test',
+                'password' => 'wrong-password-1',
+            ]),
+            429,
+        );
+    }
+
+    #[Test]
     public function repeated_failed_logins_are_rate_limited(): void
     {
-        RateLimiter::clear('login:owner@example.test|127.0.0.1');
 
         $this->owner($this->company(), ['email' => 'owner@example.test', 'password' => 'correct-horse-7']);
 

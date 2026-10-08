@@ -20,6 +20,17 @@ class PermissionController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        /*
+         * No authorize() call, deliberately — the one action in the API
+         * without one.
+         *
+         * This is the fixed, seeded catalogue of permission names: no tenant
+         * data, no account data, the same sixteen rows for everyone. Gating it
+         * was tried and reverted. It protects nothing, and the suspended-
+         * account test in EscalationTest leans on this route precisely because
+         * it consults no policy — that is how it proves the kill switch
+         * reaches routes Gate::before never sees.
+         */
         $permissions = Permission::query()
             ->orderBy('group')
             ->orderBy('name')

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 
-import { apiUrl, clearToken, getToken } from '@hagamra/shared/lib/session';
+import { apiUrl, getToken } from '@hagamra/shared/lib/session';
 import type { ApiEnvelope, Session } from '@hagamra/shared/types';
 
 /**
@@ -29,11 +29,10 @@ export async function serverGet<T>(path: string): Promise<T | null> {
       cache: 'no-store',
     });
 
-    if (response.status === 401) {
-      await clearToken();
-
-      return null;
-    }
+    // The dead cookie is cleared by the route this redirects to, not here:
+    // a Server Component cannot write a cookie, and the attempt throws into
+    // the catch below where it was silently swallowed.
+    if (response.status === 401) return null;
 
     if (!response.ok) return null;
 
@@ -57,7 +56,17 @@ export async function serverGet<T>(path: string): Promise<T | null> {
 export async function requireSession(): Promise<Session> {
   const session = await serverGet<Session>('auth/me');
 
-  if (!session) redirect('/login');
+  /*
+   * Via the route handler rather than straight to /login, because the cookie
+   * has to go first and only a route handler may delete it.
+   *
+   * Sending them to /login directly locked them out of the panel entirely: the
+   * stale cookie was still there, so the middleware read it as signed in and
+   * bounced /login back to /, which came here again. The two redirected to
+   * each other until the browser gave up with ERR_TOO_MANY_REDIRECTS, and no
+   * route was left that could clear the cookie.
+   */
+  if (!session) redirect('/api/auth/expired');
 
   return session;
 }

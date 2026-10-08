@@ -118,10 +118,21 @@ class AuthService
         }
     }
 
-    private function tokenExpiry(): ?\DateTimeInterface
+    /**
+     * When the token issued for this sign-in stops working.
+     *
+     * Never null. A session that does not expire means a token copied out of a
+     * log, a proxy or a database backup keeps working for ever, long after the
+     * cookie that carried it went stale in the browser — and
+     * `sanctum:prune-expired` has nothing to prune.
+     *
+     * The global sanctum.expiration still wins where an operator has set one,
+     * so raising it here cannot quietly outlive a shorter policy.
+     */
+    private function tokenExpiry(): \DateTimeInterface
     {
-        $minutes = config('sanctum.expiration');
+        $minutes = (int) (config('sanctum.expiration') ?: config('sanctum.session_expiration'));
 
-        return $minutes ? now()->addMinutes((int) $minutes) : null;
+        return now()->addMinutes(max($minutes, 1));
     }
 }

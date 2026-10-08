@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Console\ServeCommand;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -137,14 +138,30 @@ class AppServiceProvider extends ServiceProvider
             return $query->firstOrFail();
         });
 
-        // Owner routes are super-admin only, so there is no tenant to narrow
-        // to; this binding exists to keep the employee and owner endpoints from
-        // being usable against each other's accounts.
-        Route::bind('owner', fn (string $value) => User::query()
-            ->owners()
-            ->whereKey($value)
-            ->firstOrFail()
-        );
+        /*
+         * Narrowed the same way, and for the same reason as the company
+         * binding below.
+         *
+         * The note that used to stand here said owner routes are super-admin
+         * only, so there was no tenant to narrow to. That is true of the
+         * *controller*, which runs after this — the binding itself answered to
+         * anyone. An employee with no permissions could walk
+         * `/api/companies/{their own}/owners/{id}` and read 403 for an id that
+         * belongs to an owner against 404 for one that does not, counting the
+         * platform's owners across every tenant without being allowed to see
+         * any of them.
+         */
+        Route::bind('owner', function (string $value) {
+            $query = User::query()->owners()->whereKey($value);
+
+            $actor = request()->user();
+
+            if ($actor instanceof User && $actor->role->belongsToCompany()) {
+                $query->ofCompany($actor->company_id);
+            }
+
+            return $query->firstOrFail();
+        });
 
         /*
          * A company a caller may not see is "not found", not "forbidden".
@@ -170,13 +187,43 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimiting(): void
     {
-        // Authentication is limited per e-mail *and* per IP, so neither a
-        // single address nor a single client can be used to grind passwords.
+        /*
+         * Authentication is limited per account *and* per client, so neither a
+         * single address nor a single machine can be used to grind passwords.
+         *
+         * The bucket is keyed on the account the address resolves to, not on
+         * the address as typed. Those are not the same thing: the users table
+         * collates utf8mb4_unicode_ci, which is accent-insensitive, so
+         * `möhamed@…` finds the row belonging to `mohamed@…` — while
+         * mb_strtolower leaves the two as different strings and therefore
+         * different buckets. Five guesses, switch an accent, five more, and so
+         * on without limit. Resolving to the id first makes the bucket exactly
+         * as wide as the thing being protected.
+         *
+         * Query builder rather than Eloquent: no global scope should be able to
+         * change which row a throttle key is derived from.
+         */
         RateLimiter::for('login', function (Request $request) {
-            $email = (string) $request->input('email');
+            $email = mb_strtolower(trim((string) $request->input('email')));
+
+            $id = $email === '' ? null : DB::table('users')
+                ->whereNull('deleted_at')
+                ->where('email', $email)
+                ->value('id');
+
+            // An address that matches nothing is still worth bucketing, so a
+            // sweep over invented addresses cannot run free.
+            $account = $id === null ? 'email:'.hash('xxh128', $email) : 'id:'.$id;
 
             return [
-                Limit::perMinute(5)->by('login:'.mb_strtolower($email).'|'.$request->ip()),
+                Limit::perMinute(5)->by('login:'.$account.'|'.$request->ip()),
+                /*
+                 * The same account from anywhere. Without this, the per-client
+                 * limit above is no limit at all against someone with more
+                 * than one address to come from — which is the ordinary shape
+                 * of a credential-stuffing run.
+                 */
+                Limit::perMinute(15)->by('login-account:'.$account),
                 Limit::perMinute(20)->by('login-ip:'.$request->ip()),
             ];
         });
