@@ -10,6 +10,7 @@ import { Checkbox, Field, Input, Select } from '@hagamra/shared/components/ui/Fi
 import { Badge, Card, PageHeader, Td, Th, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { Spinner } from '@hagamra/shared/components/ui/Feedback';
 import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
+import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -62,6 +63,8 @@ export function EmployeesView() {
 
   const [form, setForm] = useState<FormState>(BLANK);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useErrorFocus(errors);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyId, setCompanyId] = useState('');

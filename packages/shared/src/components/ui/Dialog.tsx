@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@hagamra/shared/lib/cn';
 
 import { Button } from './Button';
+import { TOAST_LAYER_ID } from './Toast';
 
 /**
  * Built on the native <dialog>, which brings focus trapping, Escape handling
@@ -65,11 +66,33 @@ export function Dialog({
       onClose={onClose}
       onClick={(event) => {
         // Clicking the backdrop means the <dialog> itself is the target.
-        if (event.target === ref.current) onClose();
+        if (event.target !== ref.current) return;
+
+        // A toast is painted over the backdrop but, like everything outside a
+        // modal, cannot receive the click itself — so reaching for the message
+        // that explains why the save failed arrives here instead. Discarding
+        // the form at that moment would be perverse.
+        const toasts = document.getElementById(TOAST_LAYER_ID)?.getBoundingClientRect();
+
+        if (
+          toasts
+          && event.clientX >= toasts.left && event.clientX <= toasts.right
+          && event.clientY >= toasts.top && event.clientY <= toasts.bottom
+        ) {
+          return;
+        }
+
+        onClose();
       }}
       aria-labelledby="dialog-title"
       className={cn(
         'animate-rise w-[calc(100vw-2rem)] overflow-hidden p-0',
+        // Bounded by the window and laid out as a column, so a long form
+        // scrolls inside its own body while the title and the buttons stay
+        // put. Capping only the body let the whole dialog outgrow the screen,
+        // which pushed the first field — and the error attached to it — above
+        // the top edge where nothing could scroll it back.
+        'flex max-h-[calc(100dvh-2rem)] flex-col',
         'rounded-[var(--radius-large)] border border-border-subtle bg-surface',
         'text-foreground shadow-floating',
         // The page behind is dimmed and pushed out of focus, so the dialog is
@@ -79,7 +102,7 @@ export function Dialog({
         widths[size],
       )}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-6 py-4">
+      <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border-subtle px-6 py-4">
         <div className="min-w-0">
           <h2 id="dialog-title" className="text-lg leading-tight font-bold tracking-tight">
             {title}
@@ -97,10 +120,10 @@ export function Dialog({
         </button>
       </div>
 
-      {children && <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>}
+      {children && <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>}
 
       {footer && (
-        <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle bg-surface-muted/60 px-6 py-4">
+        <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-border-subtle bg-surface-muted/60 px-6 py-4">
           {footer}
         </div>
       )}

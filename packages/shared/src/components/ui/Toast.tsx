@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@hagamra/shared/lib/cn';
 
@@ -29,6 +29,12 @@ interface ToastApi {
 
 const ToastContext = createContext<ToastApi | null>(null);
 
+/**
+ * The layer every toast is drawn in. Named, because a modal dialog has to be
+ * able to tell a click on a toast apart from a click on its own backdrop.
+ */
+export const TOAST_LAYER_ID = 'toast-layer';
+
 export function useToast(): ToastApi {
   const context = useContext(ToastContext);
 
@@ -55,6 +61,31 @@ let nextId = 0;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const layer = useRef<HTMLDivElement>(null);
+
+  // The layer only joins the top layer while it has something to show. Keeping
+  // it there permanently would put it above a dialog opened afterwards, so an
+  // empty strip would sit over the form.
+  useEffect(() => {
+    const element = layer.current;
+
+    if (!element) return;
+
+    try {
+      if (toasts.length > 0) {
+        // Re-showing moves it back to the front of the top layer, which is
+        // what makes a toast land above a dialog opened since the last one.
+        if (element.matches(':popover-open')) element.hidePopover();
+
+        element.showPopover();
+      } else if (element.matches(':popover-open')) {
+        element.hidePopover();
+      }
+    } catch {
+      // Without popover support the layer stays an ordinary fixed element:
+      // visible on every screen except over an open dialog.
+    }
+  }, [toasts]);
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -85,8 +116,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
 
+      {/*
+        A manual popover, not a plain fixed layer.
+
+        A modal <dialog> sits in the browser's top layer, which is above every
+        z-index there is — so a toast fired while a form is open was painted
+        underneath it and nobody ever saw it. That is most of the messages that
+        matter: a save refused by the server, a lost connection, a file too
+        large. A popover joins the same top layer, and because it is shown at
+        the moment a toast appears it lands above the dialog that is already
+        there.
+      */}
       <div
-        className="pointer-events-none fixed bottom-4 start-4 z-[100] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2"
+        ref={layer}
+        id={TOAST_LAYER_ID}
+        popover="manual"
+        className={cn(
+          'pointer-events-none flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2',
+          // The popover UA style centres the element and gives it a border and
+          // padding; none of that belongs on a stack of toasts.
+          'fixed inset-auto bottom-4 start-4 m-0 border-0 bg-transparent p-0',
+        )}
         role="region"
         aria-label="الإشعارات"
       >

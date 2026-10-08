@@ -11,6 +11,7 @@ import { Checkbox, Field, Input, NumberInput, Select, Textarea } from '@hagamra/
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
 import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
+import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -69,6 +70,8 @@ export function HotelsView() {
   const [form, setForm] = useState<FormState>(BLANK);
   const [image, setImage] = useState<ImageSelection>({ file: null, removed: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useErrorFocus(errors);
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyId, setCompanyId] = useState('');

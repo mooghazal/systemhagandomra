@@ -8,6 +8,7 @@ import { Button } from '@hagamra/shared/components/ui/Button';
 import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, Select } from '@hagamra/shared/components/ui/Field';
 import { Badge, PageHeader, Td, Th, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
+import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -48,6 +49,8 @@ export function OwnersView() {
   const [form, setForm] = useState<FormState>(BLANK);
   const [companyId, setCompanyId] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useErrorFocus(errors);
 
   const [companies, setCompanies] = useState<Company[]>([]);
 

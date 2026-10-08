@@ -15,6 +15,7 @@
     "./components/upload/*": "./src/components/upload/*.tsx",
     "./components/tables/*": "./src/components/tables/*.tsx",
     "./hooks/useCreateFromUrl": "./src/hooks/useCreateFromUrl.ts",
+    "./hooks/useErrorFocus": "./src/hooks/useErrorFocus.ts",
     "./hooks/useResource": "./src/hooks/useResource.ts",
     "./hooks/useSession": "./src/hooks/useSession.tsx",
     "./lib/api": "./src/lib/api.ts",

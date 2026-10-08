@@ -10,6 +10,7 @@ import { Checkbox, Field, Input, Select, Textarea } from '@hagamra/shared/compon
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
 import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
+import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -69,6 +70,8 @@ export function CompaniesView() {
   const [form, setForm] = useState<FormState>(BLANK);
   const [logo, setLogo] = useState<ImageSelection>({ file: null, removed: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useErrorFocus(errors);
 
 
   const open = (item: Company | null) => {
