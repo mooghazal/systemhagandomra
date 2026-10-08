@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, UserCog } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
@@ -166,6 +166,8 @@ export function OwnersView() {
       <PageHeader
         title="الملاك"
         description="مالك واحد لكل شركة"
+        icon={UserCog}
+        accent="owners"
         action={
           available.length === 0 && companies.length > 0 ? (
             <span className="text-xs text-muted">كل الشركات لديها مالك</span>

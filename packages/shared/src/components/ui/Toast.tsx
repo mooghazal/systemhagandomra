@@ -39,10 +39,16 @@ export function useToast(): ToastApi {
   return context;
 }
 
-const STYLES: Record<ToastKind, { box: string; icon: React.ElementType }> = {
-  success: { box: 'bg-success-soft border-success/30 text-success', icon: CheckCircle2 },
-  error: { box: 'bg-danger-soft border-danger/30 text-danger', icon: AlertCircle },
-  info: { box: 'bg-info-soft border-info/30 text-info', icon: Info },
+/**
+ * A toast sits on the panel's own surface with a coloured bar down its inline
+ * start, rather than being a block of tinted colour. A fully tinted card at
+ * this size competes with the page; a bar reads as a status at a glance and
+ * leaves the message on a neutral background where it is easiest to read.
+ */
+const STYLES: Record<ToastKind, { bar: string; icon: React.ElementType; tint: string }> = {
+  success: { bar: 'bg-success', tint: 'text-success', icon: CheckCircle2 },
+  error: { bar: 'bg-danger', tint: 'text-danger', icon: AlertCircle },
+  info: { bar: 'bg-info', tint: 'text-info', icon: Info },
 };
 
 let nextId = 0;
@@ -85,7 +91,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         aria-label="الإشعارات"
       >
         {toasts.map((toast) => {
-          const { box, icon: Icon } = STYLES[toast.kind];
+          const { bar, tint, icon: Icon } = STYLES[toast.kind];
 
           return (
             <div
@@ -93,16 +99,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               role={toast.kind === 'error' ? 'alert' : 'status'}
               aria-live={toast.kind === 'error' ? 'assertive' : 'polite'}
               className={cn(
-                'pointer-events-auto flex items-start gap-3 rounded-[var(--radius-base)] border px-4 py-3 shadow-lg',
-                box,
+                'animate-slide-in pointer-events-auto relative flex items-start gap-3 overflow-hidden',
+                'rounded-[var(--radius-base)] border border-border-subtle bg-surface',
+                'py-3.5 pe-3 ps-5 shadow-floating',
               )}
             >
-              <Icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-              <p className="flex-1 text-sm leading-6">{toast.message}</p>
+              <span
+                aria-hidden="true"
+                className={cn('absolute inset-y-0 start-0 w-1', bar)}
+              />
+
+              <Icon className={cn('mt-0.5 size-5 shrink-0', tint)} aria-hidden="true" />
+              <p className="flex-1 text-sm leading-6 text-foreground">{toast.message}</p>
+
               <button
                 type="button"
                 onClick={() => dismiss(toast.id)}
-                className="shrink-0 rounded p-0.5 opacity-60 transition-opacity hover:opacity-100"
+                className="shrink-0 rounded-full p-1 text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
                 aria-label="إغلاق الإشعار"
               >
                 <X className="size-4" aria-hidden="true" />

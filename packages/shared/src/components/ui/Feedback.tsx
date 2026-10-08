@@ -46,13 +46,43 @@ export function TableSkeleton({ rows = 6, columns = 5 }: { rows?: number; column
           {Array.from({ length: columns }).map((__, columnIndex) => (
             <div
               key={columnIndex}
-              className="h-4 flex-1 animate-pulse rounded bg-[var(--border)]"
-              style={{ maxWidth: columnIndex === 0 ? '12rem' : undefined }}
+              className="shimmer h-4 flex-1 rounded-full"
+              style={{
+                maxWidth: columnIndex === 0 ? '12rem' : undefined,
+                // Staggered, so the sweep crosses the table rather than every
+                // cell flashing in lockstep.
+                animationDelay: `${(rowIndex * columns + columnIndex) * 45}ms`,
+              }}
             />
           ))}
         </div>
       ))}
       <span className="sr-only">جارٍ تحميل البيانات</span>
+    </div>
+  );
+}
+
+/**
+ * The circular mark the empty and error states are built around.
+ *
+ * A ring around the disc rather than a flat circle: it gives the icon a little
+ * depth at no cost, and keeps the two states visually matched.
+ */
+function StateIcon({
+  icon: Icon,
+  className,
+}: {
+  icon: React.ElementType;
+  className: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex size-14 items-center justify-center rounded-full ring-8',
+        className,
+      )}
+    >
+      <Icon className="size-6" aria-hidden="true" />
     </div>
   );
 }
@@ -69,13 +99,17 @@ export function EmptyState({
   icon?: React.ElementType;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-      <div className="rounded-full bg-surface-muted p-3">
-        <Icon className="size-6 text-muted" aria-hidden="true" />
+    <div className="animate-fade flex flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+      <StateIcon icon={Icon} className="bg-surface-muted text-muted ring-surface-sunken/60" />
+
+      <div className="space-y-1.5">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {description && (
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted">{description}</p>
+        )}
       </div>
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      {description && <p className="max-w-sm text-sm text-muted">{description}</p>}
-      {action && <div className="mt-2">{action}</div>}
+
+      {action && <div className="mt-1">{action}</div>}
     </div>
   );
 }
@@ -98,17 +132,24 @@ export function ErrorState({
   const Icon = forbidden ? Lock : AlertTriangle;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-      <div className={cn('rounded-full p-3', forbidden ? 'bg-warning-soft' : 'bg-danger-soft')}>
-        <Icon
-          className={cn('size-6', forbidden ? 'text-warning' : 'text-danger')}
-          aria-hidden="true"
-        />
-      </div>
+    <div className="animate-fade flex flex-col items-center justify-center gap-4 px-6 py-20 text-center">
+      <StateIcon
+        icon={Icon}
+        className={
+          forbidden
+            ? 'bg-warning-soft text-warning ring-[var(--warning-soft)]/50'
+            : 'bg-danger-soft text-danger ring-[var(--danger-soft)]/50'
+        }
+      />
 
-      <p className="max-w-md text-sm text-muted-strong" role="alert">
-        {message}
-      </p>
+      <div className="space-y-1.5">
+        <h3 className="text-base font-semibold text-foreground">
+          {forbidden ? 'غير مصرّح' : 'تعذّر إتمام العملية'}
+        </h3>
+        <p className="mx-auto max-w-md text-sm leading-relaxed text-muted" role="alert">
+          {message}
+        </p>
+      </div>
 
       {/* A permission refusal will not change on a retry, so no button. */}
       {onRetry && !forbidden && (

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import { dropEvent } from '../../test/setup';
 import { ImageUploader, type ImageSelection } from './ImageUploader';
@@ -22,13 +22,15 @@ function imageFile(name = 'photo.jpg', type = 'image/jpeg', bytes = 1024): File 
 }
 
 describe('ImageUploader', () => {
-  let onChange: ReturnType<typeof vi.fn>;
+  // Typed, so the mock has to match the prop it stands in for — an untyped
+  // vi.fn() would accept any shape and the assertions below would prove less.
+  let onChange: Mock<(selection: ImageSelection) => void>;
 
   beforeEach(() => {
     onChange = vi.fn();
   });
 
-  const lastSelection = (): ImageSelection => onChange.mock.calls.at(-1)?.[0] as ImageSelection;
+  const lastSelection = (): ImageSelection => onChange.mock.calls.at(-1)![0];
 
   it('says nothing until something happens', () => {
     render(<ImageUploader onChange={onChange} />);

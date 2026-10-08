@@ -1,7 +1,6 @@
 'use client';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { Hotel as HotelIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { FeatureSelector, HOTEL_FEATURES } from '@hagamra/shared/components/forms/FeatureSelector';
@@ -11,6 +10,7 @@ import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, NumberInput, Select, Textarea } from '@hagamra/shared/components/ui/Field';
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
+import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -56,14 +56,13 @@ const ROOM_TYPES = ['ثنائية', 'ثلاثية', 'رباعية', 'خماسي�
 export function HotelsView() {
   const { can, isSuperAdmin } = useSession();
   const toast = useToast();
-  const params = useSearchParams();
 
   const state = useResource<Hotel>(
     useCallback((query, signal) => hotelsService.getAll(query, signal), []),
   );
 
   const [editing, setEditing] = useState<Hotel | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useCreateFromUrl(can('hotels.create'));
   const [deleting, setDeleting] = useState<Hotel | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -83,9 +82,6 @@ export function HotelsView() {
       .catch(() => setCompanies([]));
   }, [isSuperAdmin]);
 
-  useEffect(() => {
-    if (params.get('new') === '1' && can('hotels.create')) setCreating(true);
-  }, [params, can]);
 
   const open = (item: Hotel | null) => {
     setErrors({});
@@ -192,7 +188,13 @@ export function HotelsView() {
 
   return (
     <>
-      <PageHeader title="الفنادق" description="فنادق الإقامة في مكة والمدينة" action={addButton} />
+      <PageHeader
+        title="الفنادق"
+        description="فنادق الإقامة في مكة والمدينة"
+        icon={HotelIcon}
+        accent="hotels"
+        action={addButton}
+      />
 
       <ResourceTable
         state={state}

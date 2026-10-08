@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye } from 'lucide-react';
+import { Eye, ScrollText } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
@@ -60,6 +60,8 @@ export function AuditLogsView() {
       <PageHeader
         title="سجل العمليات"
         description="سجل غير قابل للتعديل لكل عملية مهمّة في النظام"
+        icon={ScrollText}
+        accent="hotels"
       />
 
       <ResourceTable

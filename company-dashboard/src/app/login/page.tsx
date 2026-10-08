@@ -118,17 +118,24 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-md">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
+      {/* A soft wash behind the card, so the page reads as a surface rather
+          than an empty sheet. Decorative only. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_40rem_at_50%_-10%,var(--primary-soft),transparent_70%)]"
+      />
+
+      <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary">
-            <span className="text-2xl font-bold text-primary-foreground">ح</span>
+          <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-[1.25rem] bg-primary shadow-floating">
+            <span className="text-3xl font-bold text-primary-foreground">ح</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">لوحة الشركة</h1>
           <p className="mt-1 text-sm text-muted">ادخل بحساب شركتك</p>
         </div>
 
-        <div className="rounded-[var(--radius-base)] border border-border-subtle bg-surface p-6 shadow-sm">
+        <div className="rounded-[var(--radius-large)] border border-border-subtle bg-surface p-7 shadow-floating">
           <Suspense fallback={<div className="h-64" />}>
             <LoginForm />
           </Suspense>

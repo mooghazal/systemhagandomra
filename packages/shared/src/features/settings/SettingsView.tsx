@@ -1,6 +1,6 @@
 'use client';
 
-import { KeyRound, ScrollText, Users } from 'lucide-react';
+import { KeyRound, ScrollText, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 
 import { Card, PageHeader } from '@hagamra/shared/components/ui/Primitives';
@@ -43,7 +43,12 @@ export function SettingsView() {
 
   return (
     <>
-      <PageHeader title="الإعدادات" description="إدارة النظام" />
+      <PageHeader
+        title="الإعدادات"
+        description="إدارة النظام"
+        icon={Settings}
+        accent="employees"
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {links.map(({ href, icon: Icon, title, description }) => (

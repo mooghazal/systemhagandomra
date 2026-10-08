@@ -1,8 +1,7 @@
 'use client';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
 import { Button } from '@hagamra/shared/components/ui/Button';
@@ -10,6 +9,7 @@ import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, Select, Textarea } from '@hagamra/shared/components/ui/Field';
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
+import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -56,14 +56,13 @@ const BLANK: FormState = {
 
 export function CompaniesView() {
   const toast = useToast();
-  const params = useSearchParams();
 
   const state = useResource<Company>(
     useCallback((query, signal) => companiesService.getAll(query, signal), []),
   );
 
   const [editing, setEditing] = useState<Company | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useCreateFromUrl(true);
   const [deleting, setDeleting] = useState<Company | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -71,9 +70,6 @@ export function CompaniesView() {
   const [logo, setLogo] = useState<ImageSelection>({ file: null, removed: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (params.get('new') === '1') setCreating(true);
-  }, [params]);
 
   const open = (item: Company | null) => {
     setErrors({});
@@ -184,7 +180,13 @@ export function CompaniesView() {
 
   return (
     <>
-      <PageHeader title="الشركات" description="شركات الحج والعمرة المسجّلة" action={addButton} />
+      <PageHeader
+        title="الشركات"
+        description="شركات الحج والعمرة المسجّلة"
+        icon={Building2}
+        accent="companies"
+        action={addButton}
+      />
 
       <ResourceTable
         state={state}

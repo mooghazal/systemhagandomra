@@ -8,17 +8,22 @@ import { cn } from '@hagamra/shared/lib/cn';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
 type Size = 'sm' | 'md' | 'lg' | 'icon';
 
+/**
+ * Only the two filled variants carry a shadow. Lifting every button flattens
+ * the hierarchy again — the point of the shadow is that one action per screen
+ * reads as the one to take.
+ */
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
-  secondary: 'bg-surface-muted text-foreground border border-border-subtle hover:bg-border-subtle/50',
-  outline: 'bg-transparent text-foreground border border-border-strong hover:bg-surface-muted',
+  primary: 'bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-raised',
+  secondary: 'bg-surface-muted text-foreground border border-border-subtle hover:border-border-strong hover:bg-surface-sunken',
+  outline: 'bg-surface text-foreground border border-border-strong hover:bg-surface-muted',
   ghost: 'bg-transparent text-muted-strong hover:bg-surface-muted hover:text-foreground',
-  danger: 'bg-danger text-white hover:bg-danger-hover',
+  danger: 'bg-danger text-white shadow-soft hover:bg-danger-hover hover:shadow-raised',
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
+  sm: 'h-9 px-3.5 text-sm gap-1.5',
+  md: 'h-10 px-4.5 text-sm gap-2',
   lg: 'h-11 px-6 text-base gap-2',
   icon: 'h-9 w-9 p-0',
 };
@@ -45,8 +50,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       className={cn(
         'inline-flex items-center justify-center rounded-[var(--radius-base)] font-medium',
-        'transition-colors select-none',
-        'disabled:pointer-events-none disabled:opacity-50',
+        'transition-all duration-150 select-none',
+        // A press that moves is the cheapest confirmation that the click
+        // landed, and it costs nothing to read.
+        'active:translate-y-px active:shadow-none',
+        'disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none',
         VARIANTS[variant],
         SIZES[size],
         className,

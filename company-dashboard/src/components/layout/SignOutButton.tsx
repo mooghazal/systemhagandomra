@@ -20,7 +20,11 @@ export function SignOutButton() {
         setBusy(true);
         await authService.logout();
 
-        // A hard navigation, so nothing from the previous account survives.
+        // A hard navigation on purpose, which is why the rule is waived here:
+        // router.push() would keep this tab's React tree and every cached
+        // response in memory, so the next person to sign in would start from
+        // the previous account's state.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = '/login';
       }}
     >

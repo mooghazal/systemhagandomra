@@ -37,11 +37,13 @@ export function ResourceTable<T>({
   const columnCount = Array.isArray(columns) ? columns.length : 5;
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center gap-3 border-b border-border-subtle p-3">
+    <Card elevated className="overflow-hidden">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border-subtle bg-surface-muted/40 p-3">
+        {/* The magnifier leads at the inline start — the right, in Arabic —
+            and the clear button closes the field at the far end. */}
         <div className="relative min-w-56 flex-1">
           <Search
-            className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+            className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-muted"
             aria-hidden="true"
           />
           <input
@@ -50,14 +52,22 @@ export function ResourceTable<T>({
             onChange={(event) => setSearch(event.target.value)}
             placeholder={searchPlaceholder}
             aria-label={searchPlaceholder}
-            className="h-10 w-full rounded-[var(--radius-base)] border bg-surface px-3 pe-10 text-sm"
+            className={cn(
+              'h-10 w-full rounded-[var(--radius-base)] border border-border-strong bg-surface',
+              'py-2 pe-9 ps-10 text-sm text-foreground transition-all duration-150',
+              'hover:border-muted/50',
+              'focus:border-primary focus:ring-2 focus:ring-[var(--primary)]/15 focus:outline-none',
+              // Chrome draws its own clear button on type=search, which would
+              // sit beside ours.
+              '[&::-webkit-search-cancel-button]:hidden',
+            )}
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
               aria-label="مسح البحث"
-              className="absolute start-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:text-foreground"
+              className="absolute end-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
             >
               <X className="size-4" aria-hidden="true" />
             </button>
@@ -80,7 +90,7 @@ export function ResourceTable<T>({
           action={search ? undefined : emptyAction}
         />
       ) : (
-        <>
+        <div className="animate-fade">
           <Table>
             <thead>
               <tr>{columns}</tr>
@@ -95,7 +105,7 @@ export function ResourceTable<T>({
             perPage={meta.per_page}
             onChange={setPage}
           />
-        </>
+        </div>
       )}
     </Card>
   );

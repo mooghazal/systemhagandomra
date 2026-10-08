@@ -3,3 +3,11 @@
 /* Design tokens, typography and base styles, so both applications look like
    one system. Imported after Tailwind because it uses @theme. */
 @import "@hagamra/shared/styles.css";
+
+/*
+ * The shared package holds most of the markup — the shell, the primitives,
+ * every feature view — and Tailwind only scans the application it is building.
+ * Without this, those files compile to no utilities at all and the screens
+ * render as unstyled HTML.
+ */
+@source "../../../packages/shared/src";

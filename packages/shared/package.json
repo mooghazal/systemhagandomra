@@ -9,10 +9,12 @@
   ],
   "//": "Subpaths mirror the folder layout, so an import reads the same as it did before this code was extracted — and a reader can tell at a glance that it is shared rather than local.",
   "exports": {
+    "./components/layout/*": "./src/components/layout/*.tsx",
     "./components/ui/*": "./src/components/ui/*.tsx",
     "./components/forms/*": "./src/components/forms/*.tsx",
     "./components/upload/*": "./src/components/upload/*.tsx",
     "./components/tables/*": "./src/components/tables/*.tsx",
+    "./hooks/useCreateFromUrl": "./src/hooks/useCreateFromUrl.ts",
     "./hooks/useResource": "./src/hooks/useResource.ts",
     "./hooks/useSession": "./src/hooks/useSession.tsx",
     "./lib/api": "./src/lib/api.ts",

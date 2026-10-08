@@ -1,7 +1,6 @@
 'use client';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { Package as PackageIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { FeatureSelector, PACKAGE_FEATURES } from '@hagamra/shared/components/forms/FeatureSelector';
@@ -11,6 +10,7 @@ import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Field, Input, NumberInput, Select, Textarea, Checkbox } from '@hagamra/shared/components/ui/Field';
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
+import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -70,14 +70,13 @@ const TRIP_TYPES = [
 export function PackagesView() {
   const { can, isSuperAdmin } = useSession();
   const toast = useToast();
-  const params = useSearchParams();
 
   const state = useResource<Package>(
     useCallback((query, signal) => packagesService.getAll(query, signal), []),
   );
 
   const [editing, setEditing] = useState<Package | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useCreateFromUrl(can('packages.create'));
   const [deleting, setDeleting] = useState<Package | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -100,9 +99,6 @@ export function PackagesView() {
   }, [isSuperAdmin]);
 
   // The dashboard's quick actions link here with ?new=1.
-  useEffect(() => {
-    if (params.get('new') === '1' && can('packages.create')) setCreating(true);
-  }, [params, can]);
 
   const open = (item: Package | null) => {
     setErrors({});
@@ -216,7 +212,13 @@ export function PackagesView() {
 
   return (
     <>
-      <PageHeader title="الباقات" description="باقات الحج والعمرة" action={addButton} />
+      <PageHeader
+        title="الباقات"
+        description="باقات الحج والعمرة"
+        icon={PackageIcon}
+        accent="packages"
+        action={addButton}
+      />
 
       <ResourceTable
         state={state}

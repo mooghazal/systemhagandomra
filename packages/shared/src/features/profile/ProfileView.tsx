@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Mail, Phone, Shield, User as UserIcon } from 'lucide-react';
+import { Building2, Mail, Phone, Shield, UserCircle, User as UserIcon } from 'lucide-react';
 
 import { Badge, Card, PageHeader, Value } from '@hagamra/shared/components/ui/Primitives';
 import { useSession } from '@hagamra/shared/hooks/useSession';
@@ -38,7 +38,12 @@ export function ProfileView() {
 
   return (
     <>
-      <PageHeader title="الملف الشخصي" description="بيانات حسابك وصلاحياتك" />
+      <PageHeader
+        title="الملف الشخصي"
+        description="بيانات حسابك وصلاحياتك"
+        icon={UserCircle}
+        accent="employees"
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-1">

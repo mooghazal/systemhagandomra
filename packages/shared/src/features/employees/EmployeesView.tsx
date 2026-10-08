@@ -1,7 +1,6 @@
 'use client';
 
-import { KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { KeyRound, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
@@ -10,6 +9,7 @@ import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, Select } from '@hagamra/shared/components/ui/Field';
 import { Badge, Card, PageHeader, Td, Th, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { Spinner } from '@hagamra/shared/components/ui/Feedback';
+import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -50,14 +50,13 @@ const BLANK: FormState = { name: '', email: '', password: '', phone: '', is_acti
 export function EmployeesView() {
   const { can, isSuperAdmin, user } = useSession();
   const toast = useToast();
-  const params = useSearchParams();
 
   const state = useResource<User>(
     useCallback((query, signal) => employeesService.getAll(query, signal), []),
   );
 
   const [editing, setEditing] = useState<User | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useCreateFromUrl(can('employees.create'));
   const [deleting, setDeleting] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -85,9 +84,6 @@ export function EmployeesView() {
       .catch(() => setCompanies([]));
   }, [isSuperAdmin]);
 
-  useEffect(() => {
-    if (params.get('new') === '1' && can('employees.create')) setCreating(true);
-  }, [params, can]);
 
   const open = (item: User | null) => {
     setErrors({});
@@ -231,7 +227,13 @@ export function EmployeesView() {
 
   return (
     <>
-      <PageHeader title="الموظفون" description="حسابات الموظفين وصلاحياتهم" action={addButton} />
+      <PageHeader
+        title="الموظفون"
+        description="حسابات الموظفين وصلاحياتهم"
+        icon={Users}
+        accent="employees"
+        action={addButton}
+      />
 
       <ResourceTable
         state={state}

@@ -54,11 +54,19 @@ export function Field({ label, error, hint, required, className, children }: Fie
   );
 }
 
+/**
+ * One control surface for every input.
+ *
+ * Focus is drawn with a ring rather than a thicker border, so the box does not
+ * change size when it gains focus and the row below it does not shift.
+ */
 const CONTROL = [
-  'w-full rounded-[var(--radius-base)] border bg-surface px-3 py-2 text-sm',
-  'text-foreground transition-colors',
-  'disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-muted',
-  'aria-[invalid=true]:border-danger',
+  'w-full rounded-[var(--radius-base)] border border-border-strong bg-surface px-3.5 py-2 text-sm',
+  'text-foreground shadow-[inset_0_1px_1px_rgb(0_0_0/0.02)] transition-all duration-150',
+  'hover:border-muted/50',
+  'focus:border-primary focus:ring-2 focus:ring-[var(--primary)]/15 focus:outline-none',
+  'disabled:cursor-not-allowed disabled:border-border-subtle disabled:bg-surface-muted disabled:text-muted disabled:shadow-none',
+  'aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-[var(--danger)]/15',
 ].join(' ');
 
 export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(

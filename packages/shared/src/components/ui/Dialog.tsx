@@ -69,34 +69,38 @@ export function Dialog({
       }}
       aria-labelledby="dialog-title"
       className={cn(
-        'w-[calc(100vw-2rem)] rounded-[var(--radius-base)] border border-border-subtle bg-surface p-0',
-        'text-foreground shadow-xl backdrop:bg-black/40',
+        'animate-rise w-[calc(100vw-2rem)] overflow-hidden p-0',
+        'rounded-[var(--radius-large)] border border-border-subtle bg-surface',
+        'text-foreground shadow-floating',
+        // The page behind is dimmed and pushed out of focus, so the dialog is
+        // unambiguously the only thing to deal with.
+        'backdrop:bg-black/50 backdrop:backdrop-blur-[3px]',
         'm-auto',
         widths[size],
       )}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-5 py-4">
-        <div>
-          <h2 id="dialog-title" className="text-lg font-semibold">
+      <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-6 py-4">
+        <div className="min-w-0">
+          <h2 id="dialog-title" className="text-lg leading-tight font-bold tracking-tight">
             {title}
           </h2>
-          {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+          {description && <p className="mt-1.5 text-sm text-muted">{description}</p>}
         </div>
 
         <button
           type="button"
           onClick={onClose}
           aria-label="إغلاق"
-          className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+          className="-me-1.5 shrink-0 rounded-full p-1.5 text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
         >
           <X className="size-5" aria-hidden="true" />
         </button>
       </div>
 
-      {children && <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>}
+      {children && <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>}
 
       {footer && (
-        <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle bg-surface-muted px-5 py-3">
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle bg-surface-muted/60 px-6 py-4">
           {footer}
         </div>
       )}

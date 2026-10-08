@@ -1,7 +1,6 @@
 'use client';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { Bus as BusIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { BUS_FEATURES, FeatureSelector } from '@hagamra/shared/components/forms/FeatureSelector';
@@ -11,6 +10,7 @@ import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, NumberInput, Select, Textarea } from '@hagamra/shared/components/ui/Field';
 import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
+import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
@@ -46,14 +46,13 @@ const BUS_TYPES = ['VIP', 'سياحية', 'عادية', 'نوم'];
 export function BusesView() {
   const { can, isSuperAdmin } = useSession();
   const toast = useToast();
-  const params = useSearchParams();
 
   const state = useResource<Bus>(
     useCallback((query, signal) => busesService.getAll(query, signal), []),
   );
 
   const [editing, setEditing] = useState<Bus | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useCreateFromUrl(can('buses.create'));
   const [deleting, setDeleting] = useState<Bus | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -73,9 +72,6 @@ export function BusesView() {
       .catch(() => setCompanies([]));
   }, [isSuperAdmin]);
 
-  useEffect(() => {
-    if (params.get('new') === '1' && can('buses.create')) setCreating(true);
-  }, [params, can]);
 
   const open = (item: Bus | null) => {
     setErrors({});
@@ -178,7 +174,13 @@ export function BusesView() {
 
   return (
     <>
-      <PageHeader title="الحافلات" description="أسطول النقل" action={addButton} />
+      <PageHeader
+        title="الحافلات"
+        description="أسطول النقل"
+        icon={BusIcon}
+        accent="buses"
+        action={addButton}
+      />
 
       <ResourceTable
         state={state}

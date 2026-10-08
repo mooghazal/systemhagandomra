@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { IBM_Plex_Sans_Arabic } from 'next/font/google';
 
+import { ThemeProvider, themeScript } from '@hagamra/shared/components/ui/Theme';
 import { ToastProvider } from '@hagamra/shared/components/ui/Toast';
 
 import './globals.css';
@@ -29,9 +30,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={arabic.variable}>
+    // suppressHydrationWarning: the inline script below sets data-theme before
+    // React runs, so the server markup and the first client render differ here
+    // by design.
+    <html lang="ar" dir="rtl" className={arabic.variable} suppressHydrationWarning>
+      <head>
+        {/*
+          * Runs before the first paint. Without it the page renders light and
+          * then corrects itself — a white flash on every navigation for anyone
+          * using dark mode.
+          */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="antialiased">
-        <ToastProvider>{children}</ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
