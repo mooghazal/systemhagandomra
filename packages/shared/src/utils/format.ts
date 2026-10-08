@@ -143,6 +143,22 @@ export const PERMISSION_ACTION_LABELS: Record<string, string> = {
 };
 
 /**
+ * Arabic names for the permission presets, and a line saying what each one is
+ * for.
+ *
+ * The backend ships the sets with English labels, the same way it ships the
+ * permission catalogue; the reading is done here. A preset with no entry falls
+ * back to its English label, so adding one in Laravel shows up straight away
+ * rather than rendering blank while it waits for a translation.
+ */
+export const PERMISSION_PRESET_LABELS: Record<string, { label: string; hint: string }> = {
+  manager: { label: 'مدير', hint: 'كل الصلاحيات، بما فيها إدارة الموظفين' },
+  operations: { label: 'مسؤول عمليات', hint: 'الباقات والفنادق والحافلات بالكامل' },
+  sales: { label: 'مبيعات', hint: 'ينشئ الباقات ويعدّلها، ويطّلع على الفنادق والحافلات' },
+  viewer: { label: 'قراءة فقط', hint: 'يشوف كل شيء ولا يغيّر أي شيء' },
+};
+
+/**
  * Builds the multipart body for a resource write.
  *
  * Three rules matter here, and all three come from the backend contract:

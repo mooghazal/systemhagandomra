@@ -7,6 +7,7 @@ import type {
   Package,
   Paginated,
   Permission,
+  PermissionPreset,
   Session,
   Stats,
   User,
@@ -142,7 +143,11 @@ export const permissionsService = {
    * without a frontend change (spec §17).
    */
   getAll: () =>
-    api.get<{ permissions: Permission[]; groups: Record<string, string[]> }>('permissions'),
+    api.get<{
+      permissions: Permission[];
+      groups: Record<string, string[]>;
+      presets: PermissionPreset[];
+    }>('permissions'),
 };
 
 // -- Company-owned resources ------------------------------------------------

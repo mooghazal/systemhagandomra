@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PermissionResource;
 use App\Models\Permission;
 use App\Support\ApiResponse;
+use App\Support\PermissionPresets;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -41,6 +42,13 @@ class PermissionController extends Controller
             'groups' => $permissions->groupBy('group')->map(
                 fn ($group) => $group->pluck('name')->values()
             ),
+            /*
+             * Starting points for the grant dialog, sent with the catalogue so
+             * a preset defined here appears in both panels without a frontend
+             * change — the same reason the catalogue itself comes from the
+             * backend rather than being hardcoded in the UI.
+             */
+            'presets' => PermissionPresets::all(),
         ]);
     }
 }

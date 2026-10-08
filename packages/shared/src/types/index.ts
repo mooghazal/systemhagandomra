@@ -83,6 +83,21 @@ export interface Permission {
   label: string;
 }
 
+/**
+ * A named starting point for a grant — "manager", "sales" — defined in Laravel
+ * so a new one reaches both panels without a frontend change.
+ *
+ * Applying one only ticks boxes. What gets stored is still an explicit list of
+ * permissions, and the preset's name is not kept against the employee: two
+ * people set up from the same preset and then adjusted differently are simply
+ * two people with different permissions, which is what they are.
+ */
+export interface PermissionPreset {
+  name: string;
+  label: string;
+  permissions: string[];
+}
+
 // -- Company-owned resources ------------------------------------------------
 
 /**

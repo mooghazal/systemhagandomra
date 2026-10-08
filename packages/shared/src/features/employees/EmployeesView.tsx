@@ -1,6 +1,6 @@
 'use client';
 
-import { KeyRound, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Check, KeyRound, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
@@ -15,11 +15,13 @@ import { useResource } from '@hagamra/shared/hooks/useResource';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
+import { cn } from '@hagamra/shared/lib/cn';
 import { companiesService, employeesService, permissionsService } from '@hagamra/shared/services';
-import type { Company, Permission, User } from '@hagamra/shared/types';
+import type { Company, Permission, PermissionPreset, User } from '@hagamra/shared/types';
 import {
   PERMISSION_ACTION_LABELS,
   PERMISSION_GROUP_LABELS,
+  PERMISSION_PRESET_LABELS,
   formatDate,
   orderPermissionGroups,
 } from '@hagamra/shared/utils/format';
@@ -71,6 +73,7 @@ export function EmployeesView() {
 
   // Permission editor
   const [catalogue, setCatalogue] = useState<Permission[] | null>(null);
+  const [presets, setPresets] = useState<PermissionPreset[]>([]);
   const [permissionTarget, setPermissionTarget] = useState<User | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -183,6 +186,7 @@ export function EmployeesView() {
       try {
         const result = await permissionsService.getAll();
         setCatalogue(result.permissions);
+        setPresets(result.presets ?? []);
       } catch {
         setCatalogue([]);
       }
@@ -443,6 +447,61 @@ export function EmployeesView() {
           <div className="flex justify-center py-8"><Spinner /></div>
         ) : (
           <div className="space-y-4">
+            {presets.length > 0 && (
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">ابدأ من مجموعة جاهزة</h3>
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {presets.map((preset) => {
+                    const text = PERMISSION_PRESET_LABELS[preset.name];
+                    // A preset is "on" when the selection is exactly its set —
+                    // not merely a superset, or every preset would light up at
+                    // once the moment everything was ticked.
+                    const active =
+                      preset.permissions.length === selected.length
+                      && preset.permissions.every((name) => selected.includes(name));
+
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setSelected([...preset.permissions])}
+                        className={cn(
+                          'rounded-[var(--radius-base)] border p-3 text-start transition-colors',
+                          active
+                            ? 'border-primary bg-primary-soft'
+                            : 'border-border-subtle hover:border-border-strong hover:bg-surface-muted',
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">
+                            {text?.label ?? preset.label}
+                          </span>
+                          {active && <Check className="size-4 text-primary" aria-hidden="true" />}
+                          <span className="tabular ms-auto text-xs text-muted">
+                            {preset.permissions.length}
+                          </span>
+                        </span>
+
+                        {text && (
+                          <span className="mt-1 block text-xs leading-relaxed text-muted">
+                            {text.hint}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Said plainly, because a preset that silently became the
+                    final answer would be worse than no preset at all. */}
+                <p className="mt-2 text-xs text-muted">
+                  اختيار مجموعة بيحدّد الصلاحيات دي — وتقدر تعدّلها تحت قبل الحفظ.
+                </p>
+              </div>
+            )}
+
             {orderedGroups.map(([group, permissions]) => {
               const names = permissions.map((permission) => permission.name);
               const allOn = names.every((name) => selected.includes(name));
