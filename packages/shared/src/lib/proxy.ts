@@ -84,6 +84,17 @@ const FORWARDED_RESPONSE_HEADERS = [
   'x-ratelimit-remaining',
 ];
 
+/**
+ * Laravel endpoints whose response body contains an access token.
+ *
+ * The whole reason the token lives in an httpOnly cookie is that a script
+ * cannot read it. Relaying these through the proxy would undo that: the
+ * browser would receive a token as ordinary JSON, which is exactly the thing
+ * an XSS is looking for. Both have a dedicated route of their own that keeps
+ * the token server-side and returns only whether it worked.
+ */
+const TOKEN_BEARING_PATHS = new Set(['auth/login', 'auth/password']);
+
 function notFound(): NextResponse {
   // Indistinguishable from a path Laravel does not serve. A refusal that
   // announced "that looked like traversal" would just be a hint.
@@ -92,6 +103,8 @@ function notFound(): NextResponse {
 
 async function forward(request: NextRequest, path: string[]): Promise<NextResponse> {
   if (!isSafePath(path)) return notFound();
+
+  if (TOKEN_BEARING_PATHS.has(path.join('/').toLowerCase())) return notFound();
 
   const token = await getToken();
 

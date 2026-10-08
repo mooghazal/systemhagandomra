@@ -72,6 +72,51 @@ export const authService = {
     await fetch('/api/auth/logout', { method: 'POST' });
   },
 
+  /**
+   * Changes the signed-in account's own password.
+   *
+   * Goes to this app's route rather than through the Laravel proxy, because
+   * the backend revokes every session on a password change and hands back a
+   * replacement token. That token belongs in the httpOnly cookie, which only
+   * the server can write — and which is the reason no script in this page can
+   * read the session in the first place.
+   *
+   * Throws with the backend's own wording where it has some: it distinguishes
+   * a wrong current password from one that fails the policy, in Arabic.
+   */
+  async changePassword(current: string, next: string): Promise<void> {
+    let response: Response;
+
+    try {
+      response = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          current_password: current,
+          password: next,
+          password_confirmation: next,
+        }),
+      });
+    } catch {
+      throw new Error('تعذّر الاتصال بالخادم. تحقّق من اتصالك بالشبكة.');
+    }
+
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok || !body?.success) {
+      const field = body?.errors
+        ? (Object.values(body.errors)[0] as string[] | undefined)?.[0]
+        : undefined;
+
+      throw new Error(
+        field
+          ?? (response.status === 429
+            ? 'محاولات كثيرة جداً. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.'
+            : 'تعذّر تغيير كلمة المرور.'),
+      );
+    }
+  },
+
   me: () => api.get<Session>('auth/me'),
 };
 

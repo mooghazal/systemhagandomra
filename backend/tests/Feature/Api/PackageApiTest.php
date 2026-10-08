@@ -334,6 +334,49 @@ class PackageApiTest extends TestCase
     }
 
     #[Test]
+    public function an_image_with_absurd_dimensions_is_rejected(): void
+    {
+        Storage::fake('public');
+
+        /*
+         * The size limit does not bound this on its own. A 50000 × 50000 PNG
+         * of one flat colour compresses to well under five megabytes and
+         * passes every other rule — and then every browser that opens the
+         * page has to decode two and a half billion pixels. The server
+         * shrugs; the reader's tab stops responding.
+         */
+        /*
+         * Over the limit on one side only. A genuinely square monster would
+         * have to be allocated here before it could be posted — the first
+         * attempt at this test asked GD for 50000 × 50000 and brought down
+         * the test run instead of the request.
+         */
+        $response = $this->post('/api/packages', [
+            'name' => 'Decompression bomb',
+            'image' => UploadedFile::fake()->image('huge.png', 7000, 120),
+        ], ['Accept' => 'application/json']);
+
+        $this->assertApiError($response, 422)->assertJsonStructure(['errors' => ['image']]);
+        $this->assertSame(0, Package::query()->count());
+    }
+
+    #[Test]
+    public function an_ordinary_photograph_is_still_accepted(): void
+    {
+        Storage::fake('public');
+
+        // The guard above has to leave real uploads alone: this is larger
+        // than anything a phone produces and well inside the limit.
+        $this->assertApiSuccess(
+            $this->post('/api/packages', [
+                'name' => 'Real photo',
+                'image' => UploadedFile::fake()->image('photo.jpg', 4032, 3024),
+            ], ['Accept' => 'application/json']),
+            201,
+        );
+    }
+
+    #[Test]
     public function an_oversized_image_is_rejected(): void
     {
         Storage::fake('public');

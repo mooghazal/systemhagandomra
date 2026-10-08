@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ImageStorage;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class UpdateCompanyRequest extends FormRequest
             'email' => ['sometimes', 'nullable', 'email:rfc', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'address' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'logo' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'logo' => ImageStorage::validationRules(optional: true),
             'remove_logo' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];

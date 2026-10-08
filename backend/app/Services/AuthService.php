@@ -83,6 +83,40 @@ class AuthService
         $token?->delete();
     }
 
+    /**
+     * The account holder changing their own password.
+     *
+     * Every other session is revoked, and the one making the request is
+     * reissued. That ordering is the point: the usual reason somebody changes
+     * their own password is that they think someone else has it, and a change
+     * that leaves the other sessions alive does not end the access it was
+     * meant to end.
+     *
+     * Returns the replacement token, because the caller's own session was
+     * just revoked along with the rest.
+     */
+    public function changeOwnPassword(User $user, string $password, string $deviceName = 'web'): string
+    {
+        $user->password = $password;
+        $user->save();
+
+        $user->tokens()->delete();
+
+        $this->audit->log(
+            action: 'password_changed',
+            resourceType: 'auth',
+            resourceId: $user->id,
+            // Never the password, old or new — AuditLogger redacts anything
+            // whose key looks like one, and there is no reason to test that
+            // here by handing it one.
+            metadata: ['self_service' => true],
+            companyId: $user->company_id,
+            actor: $user,
+        );
+
+        return $user->createToken($deviceName, ['*'], $this->tokenExpiry())->plainTextToken;
+    }
+
     public function logoutEverywhere(User $user): void
     {
         $user->tokens()->delete();

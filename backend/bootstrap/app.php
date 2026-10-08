@@ -40,6 +40,36 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(App\Http\Middleware\SecurityHeaders::class);
 
+        /*
+         * Which machines in front of this one are allowed to say where a
+         * request came from.
+         *
+         * Reached directly, nothing is trusted: an X-Forwarded-For header is
+         * invented by whoever sent it, so honouring one would let anybody
+         * choose their own rate-limit bucket and write a false IP into the
+         * audit trail.
+         *
+         * Behind nginx, a load balancer or Cloudflare the opposite is true
+         * and the header is the only way to know the real client. Without
+         * this set, $request->ip() returns the proxy's address for every
+         * request on the platform — so the login limiter becomes one shared
+         * bucket and twenty failed attempts a minute from any one person lock
+         * out every account, and every audit row records the same useless
+         * address.
+         *
+         * TRUSTED_PROXIES is a comma-separated list of addresses or CIDR
+         * ranges. The literal `*` is accepted for a host where something else
+         * guarantees nothing can reach the application directly; it trusts
+         * whatever arrives, so it is a deliberate choice and not a default.
+         */
+        $proxies = trim((string) env('TRUSTED_PROXIES', ''));
+
+        if ($proxies !== '') {
+            $middleware->trustProxies(
+                at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)),
+            );
+        }
+
         $middleware->alias([
             'active' => App\Http\Middleware\EnsureAccountIsActive::class,
         ]);

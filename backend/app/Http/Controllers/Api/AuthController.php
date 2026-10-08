@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangeOwnPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -54,6 +55,33 @@ class AuthController extends Controller
         $this->auth->logoutEverywhere($request->user());
 
         return ApiResponse::success(null);
+    }
+
+    /**
+     * POST /api/auth/password — the account holder changing their own.
+     *
+     * Available to every role, including an employee, and that is deliberate.
+     * Until this existed the only way to change a password was for somebody
+     * more senior to do it: an employee who thought their account was
+     * compromised had to find their owner, and an owner had to find a super
+     * admin. The person with the most reason to act immediately was the one
+     * who could not.
+     *
+     * The response carries a new token because every session was just
+     * revoked, including this one.
+     */
+    public function changePassword(ChangeOwnPasswordRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $token = $this->auth->changeOwnPassword(
+            $user,
+            $request->validated('password'),
+            $request->validated('device_name') ?: 'web',
+        );
+
+        return ApiResponse::success(['token' => $token]);
     }
 
     /**

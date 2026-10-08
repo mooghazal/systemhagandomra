@@ -21,6 +21,7 @@
     "./hooks/useSession": "./src/hooks/useSession.tsx",
     "./lib/api": "./src/lib/api.ts",
     "./lib/cn": "./src/lib/cn.ts",
+    "./lib/change-password-route": "./src/lib/change-password-route.ts",
     "./lib/proxy": "./src/lib/proxy.ts",
     "./lib/safe-redirect": "./src/lib/safe-redirect.ts",
     "./lib/security-headers": "./src/lib/security-headers.ts",

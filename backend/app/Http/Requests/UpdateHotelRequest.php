@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ImageStorage;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,7 +27,7 @@ class UpdateHotelRequest extends FormRequest
             'features' => ['sometimes', 'nullable', 'array', 'max:50'],
             'features.*' => ['string', 'max:100'],
 
-            'image' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'image' => ImageStorage::validationRules(optional: true),
             'remove_image' => ['sometimes', 'boolean'],
 
             'is_active' => ['sometimes', 'nullable', 'boolean'],

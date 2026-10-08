@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Security;
 
+use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Package;
 use App\Models\User;
@@ -297,5 +298,31 @@ class ApiHardeningTest extends TestCase
 
         $this->assertStringStartsWith('application/json', $response->headers->get('Content-Type'));
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    #[Test]
+    public function a_forwarded_address_from_an_untrusted_client_is_ignored(): void
+    {
+        /*
+         * TRUSTED_PROXIES is empty unless an operator sets it, and empty has
+         * to mean "believe nobody". An X-Forwarded-For is written by whoever
+         * sent the request, so honouring one from an untrusted client would
+         * let anybody choose their own rate-limit bucket and write somebody
+         * else's address into the audit trail — the two things that header is
+         * most useful for forging.
+         */
+        $this->actingAsUser($this->owner)
+            ->withHeaders([
+                'X-Forwarded-For' => '203.0.113.9',
+                'X-Real-IP' => '203.0.113.9',
+            ])
+            ->postJson('/api/packages', ['name' => 'Forwarded probe'])
+            ->assertCreated();
+
+        $this->assertNotSame(
+            '203.0.113.9',
+            AuditLog::query()->latest('id')->value('ip_address'),
+            'A client-supplied address reached the audit trail. Check trustProxies.',
+        );
     }
 }

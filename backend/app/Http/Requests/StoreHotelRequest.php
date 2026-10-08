@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\ResolvesCompanyInput;
+use App\Services\ImageStorage;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -33,7 +34,7 @@ class StoreHotelRequest extends FormRequest
             'features' => ['nullable', 'array', 'max:50'],
             'features.*' => ['string', 'max:100'],
 
-            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'image' => ImageStorage::validationRules(),
 
             'is_active' => ['nullable', 'boolean'],
         ];

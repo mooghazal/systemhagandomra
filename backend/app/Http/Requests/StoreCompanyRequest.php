@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ImageStorage;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -43,7 +44,7 @@ class StoreCompanyRequest extends FormRequest
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:500'],
-            'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'logo' => ImageStorage::validationRules(),
             'is_active' => ['nullable', 'boolean'],
 
             'owner' => ['nullable', 'array'],

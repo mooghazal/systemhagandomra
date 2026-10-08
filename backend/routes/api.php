@@ -36,6 +36,13 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('logout-all', [AuthController::class, 'logoutAll'])->name('auth.logout-all');
         Route::get('me', [AuthController::class, 'me'])->name('auth.me');
+
+        // Anyone may change their own, and only their own. The throttle is the
+        // login one: the request carries the current password, so it is a
+        // place to guess one.
+        Route::post('password', [AuthController::class, 'changePassword'])
+            ->middleware('throttle:login')
+            ->name('auth.password');
     });
 });
 

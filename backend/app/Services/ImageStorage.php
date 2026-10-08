@@ -24,6 +24,46 @@ class ImageStorage
         'image/webp',
     ];
 
+    /** Megabytes. Generous for a photograph, mean for anything else. */
+    private const MAX_MEGABYTES = 5;
+
+    /**
+     * The largest picture worth keeping.
+     *
+     * The size limit alone does not bound this. A 50000 × 50000 PNG of a flat
+     * colour compresses to well under five megabytes and passes every other
+     * rule here — and then every browser that opens the page has to decode
+     * two and a half billion pixels. The server shrugs; the reader's tab
+     * stops responding.
+     *
+     * 6000px is above any photograph a company would reasonably upload of a
+     * hotel or a bus, and far below the point where decoding it hurts.
+     */
+    private const MAX_DIMENSION = 6000;
+
+    /**
+     * The validation rules for an uploaded image, in one place.
+     *
+     * Eight FormRequests need exactly this list. Written out in each of them,
+     * the day one gains a rule the other seven silently keep the old one.
+     *
+     * @param  bool  $optional  true on update, where an absent field means
+     *                          "leave the current image alone"
+     * @return array<int, string>
+     */
+    public static function validationRules(bool $optional = false): array
+    {
+        return array_values(array_filter([
+            $optional ? 'sometimes' : null,
+            'nullable',
+            // Real image, decided by content.
+            'image',
+            'mimes:jpeg,jpg,png,webp',
+            'max:'.(self::MAX_MEGABYTES * 1024),
+            'dimensions:max_width='.self::MAX_DIMENSION.',max_height='.self::MAX_DIMENSION,
+        ]));
+    }
+
     public function __construct(private readonly FilesystemFactory $filesystem) {}
 
     /**

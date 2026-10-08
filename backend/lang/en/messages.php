@@ -19,4 +19,6 @@ return [
     'image_too_large' => 'The image may not be larger than 5 MB.',
     'end_before_start' => 'The end date must fall on or after the start date.',
     'rating_range' => 'The rating must be between 1 and 5 stars.',
+    'current_password_incorrect' => 'The current password is not correct.',
+    'password_must_differ' => 'The new password must differ from the current one.',
 ];

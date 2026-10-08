@@ -1,8 +1,9 @@
 'use client';
 
-import { Building2, Mail, Phone, Shield, UserCircle, User as UserIcon } from 'lucide-react';
+import { Building2, KeyRound, Mail, Phone, Shield, UserCircle, User as UserIcon } from 'lucide-react';
 
 import { Badge, Card, PageHeader, Value } from '@hagamra/shared/components/ui/Primitives';
+import { ChangePasswordForm } from '@hagamra/shared/features/profile/ChangePasswordForm';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import {
   PERMISSION_ACTION_LABELS,
@@ -13,9 +14,15 @@ import {
 /**
  * The signed-in account (spec §53).
  *
- * Read-only, and deliberately so: nothing sensitive is shown and nothing is
- * editable here. Changing a password or disabling an account goes through the
+ * Almost read-only. The details and the permission list are shown and not
+ * edited — changing somebody's name, e-mail or access goes through the
  * employee and owner screens, where the backend can check who is asking.
+ *
+ * The one exception is the password, and it is an exception for a reason.
+ * Everything else about an account should be changed by whoever is
+ * responsible for it; a password should be changeable by the person who knows
+ * it, immediately, without finding anyone. Leaving it out meant an employee
+ * who thought their account was compromised had to wait for their owner.
  */
 export function ProfileView() {
   const { user, permissions, isSuperAdmin } = useSession();
@@ -109,6 +116,24 @@ export function ProfileView() {
             ما تراه هنا يحدّد ما تعرضه الواجهة فقط. كل طلب يُفحص من جديد في الخادم، فإخفاء زرّ أو
             إظهاره لا يغيّر شيئاً في ما هو مسموح فعلاً.
           </p>
+        </Card>
+
+        <Card className="p-6 lg:col-span-3">
+          <div className="mb-5 flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-small)] bg-primary-soft text-primary">
+              <KeyRound className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">تغيير كلمة المرور</h2>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                تغيير كلمة المرور بينهي كل الجلسات المفتوحة على حسابك — على أي جهاز تاني، ومفتاح
+                المساعد الذكي لو كان معمول لحسابك. ده المقصود: لو غيّرتها لأنك شاكك إن حد تاني
+                معاه كلمتك، لازم وصوله ينتهي فعلاً.
+              </p>
+            </div>
+          </div>
+
+          <ChangePasswordForm />
         </Card>
       </div>
     </>
