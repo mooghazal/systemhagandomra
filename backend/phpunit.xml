@@ -5,9 +5,17 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
+        <!--
+            Only Feature. The Unit suite was declared and its directory was
+            empty, and a suite that contains nothing is a line of config that
+            can only ever be wrong.
+
+            Everything here needs the database: the tenant scope, the
+            generated columns carrying the uniqueness constraints, and the
+            collation the login throttle is keyed around are all behaviour of
+            MySQL rather than of a class. Add a Unit suite back when there is
+            something that genuinely does not need it.
+        -->
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>

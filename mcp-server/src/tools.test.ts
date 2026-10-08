@@ -5,6 +5,22 @@ import { ApiError, describeError } from './lib/client.js';
 import { buildPayload, okList } from './lib/payload.js';
 
 /**
+ * The first text block of a tool result.
+ *
+ * A content block is a union — text, image, audio, a resource link — and only
+ * one member of it has a `text` property. Reaching for `.text` without
+ * narrowing is a type error, and was one that nobody saw because `tsc` over
+ * this package was not part of any routine until the verify script existed.
+ */
+function firstText(result: { content: Array<{ type: string }> }): string {
+  const block = result.content.find((item) => item.type === 'text');
+
+  if (block === undefined) throw new Error('The result carried no text block.');
+
+  return (block as { type: 'text'; text: string }).text;
+}
+
+/**
  * The parts of the server that can be checked without a backend.
  *
  * The end-to-end check lives in probe.ts, which drives the real protocol
@@ -115,7 +131,7 @@ describe('okList', () => {
   it('says plainly when nothing matched', () => {
     const result = okList(page([], 0), 'hotels');
 
-    expect(result.content[0]?.text).toContain('No hotels matched');
+    expect(firstText(result)).toContain('No hotels matched');
   });
 
   it('trims a response that would swamp the agent, and says how to narrow it', () => {

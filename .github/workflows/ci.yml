@@ -1,0 +1,109 @@
+name: CI
+
+# Every push and every pull request. The point of these tests is that nobody
+# has to remember to run them — roughly half are written from an attacker's
+# side and check that a permission cannot be escalated, so a change that
+# quietly reopens one of those should fail here rather than in production.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# A second push to the same branch cancels the first. No value in finishing a
+# run against a commit nobody will look at again.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Laravel (${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # composer.json asks for ^8.3. Running both means an upgrade to 8.4
+        # is a decision rather than a surprise.
+        php: ['8.3', '8.4']
+
+    services:
+      mysql:
+        # The tests lean on behaviour that is specific to this database:
+        # stored generated columns carrying the uniqueness constraints, and
+        # utf8mb4_unicode_ci being accent-insensitive, which is what the
+        # login throttle is keyed around. SQLite would pass and prove
+        # nothing.
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: hagamra_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          # gd is not optional: the upload tests generate real images, and
+          # the dimension guard is checked by actually decoding one.
+          extensions: mbstring, pdo_mysql, gd, intl, zip, bcmath
+          coverage: none
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ matrix.php }}-${{ hashFiles('backend/composer.lock') }}
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare the environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          {
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=hagamra_test"
+            echo "DB_TEST_DATABASE=hagamra_test"
+            echo "DB_USERNAME=root"
+            echo "DB_PASSWORD=root"
+          } >> .env
+
+      - run: php artisan test
+
+  frontend:
+    name: Next.js and the shared package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # The workspaces share one lock file, so this installs all of them.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      # Type errors and Tailwind's own source scan only happen at build time.
+      # A page can pass its tests and still fail to compile.
+      - run: npm run build --workspace=admin-panel
+      - run: npm run build --workspace=company-dashboard
+      - run: npm run build --workspace=mcp-server

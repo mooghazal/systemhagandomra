@@ -29,3 +29,7 @@ Thumbs.db
 # Contains a generated database credential.
 /database/setup-mysql.sql
 /database/mysql-init.sql
+
+# Backups contain every row in the database. They are the one thing in this
+# project that must never reach a repository.
+/storage/backups

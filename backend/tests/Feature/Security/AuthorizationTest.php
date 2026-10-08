@@ -35,9 +35,9 @@ class AuthorizationTest extends TestCase
     public static function resources(): array
     {
         return [
-            'packages' => ['packages', Package::class, 'packages'],
-            'hotels' => ['hotels', Hotel::class, 'hotels'],
-            'buses' => ['buses', Bus::class, 'buses'],
+            'packages' => ['packages', Package::class],
+            'hotels' => ['hotels', Hotel::class],
+            'buses' => ['buses', Bus::class],
         ];
     }
 
@@ -58,11 +58,11 @@ class AuthorizationTest extends TestCase
 
     #[Test]
     #[DataProvider('resources')]
-    public function view_permission_does_not_imply_write_permission(string $path, string $model, string $group): void
+    public function view_permission_does_not_imply_write_permission(string $path, string $model): void
     {
         $record = $model::factory()->forCompany($this->company)->create(['name' => 'Original']);
 
-        $this->actingAsUser($this->employee($this->company, ["{$group}.view"]));
+        $this->actingAsUser($this->employee($this->company, ["{$path}.view"]));
 
         $this->assertApiSuccess($this->getJson("/api/{$path}"));
         $this->assertApiSuccess($this->getJson("/api/{$path}/{$record->id}"));
@@ -76,11 +76,11 @@ class AuthorizationTest extends TestCase
 
     #[Test]
     #[DataProvider('resources')]
-    public function create_permission_does_not_imply_update_or_delete(string $path, string $model, string $group): void
+    public function create_permission_does_not_imply_update_or_delete(string $path, string $model): void
     {
         $record = $model::factory()->forCompany($this->company)->create();
 
-        $this->actingAsUser($this->employee($this->company, ["{$group}.create"]));
+        $this->actingAsUser($this->employee($this->company, ["{$path}.create"]));
 
         $this->assertApiSuccess($this->postJson("/api/{$path}", ['name' => 'Fresh']), 201);
         $this->assertApiError($this->putJson("/api/{$path}/{$record->id}", ['name' => 'X']), 403);
@@ -89,11 +89,11 @@ class AuthorizationTest extends TestCase
 
     #[Test]
     #[DataProvider('resources')]
-    public function delete_permission_allows_only_deleting(string $path, string $model, string $group): void
+    public function delete_permission_allows_only_deleting(string $path, string $model): void
     {
         $record = $model::factory()->forCompany($this->company)->create();
 
-        $this->actingAsUser($this->employee($this->company, ["{$group}.delete"]));
+        $this->actingAsUser($this->employee($this->company, ["{$path}.delete"]));
 
         $this->assertApiError($this->postJson("/api/{$path}", ['name' => 'X']), 403);
         $this->assertApiError($this->putJson("/api/{$path}/{$record->id}", ['name' => 'X']), 403);
