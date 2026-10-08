@@ -1,0 +1,53 @@
+{
+  "name": "@hagamra/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UI, API client and screens shared by the admin panel and the company dashboard",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "//": "Subpaths mirror the folder layout, so an import reads the same as it did before this code was extracted — and a reader can tell at a glance that it is shared rather than local.",
+  "exports": {
+    "./components/ui/*": "./src/components/ui/*.tsx",
+    "./components/forms/*": "./src/components/forms/*.tsx",
+    "./components/upload/*": "./src/components/upload/*.tsx",
+    "./components/tables/*": "./src/components/tables/*.tsx",
+    "./hooks/useResource": "./src/hooks/useResource.ts",
+    "./hooks/useSession": "./src/hooks/useSession.tsx",
+    "./lib/api": "./src/lib/api.ts",
+    "./lib/cn": "./src/lib/cn.ts",
+    "./lib/session": "./src/lib/session.ts",
+    "./lib/server-api": "./src/lib/server-api.ts",
+    "./services": "./src/services/index.ts",
+    "./types": "./src/types/index.ts",
+    "./utils/format": "./src/utils/format.ts",
+    "./features/*": "./src/features/*.tsx",
+    "./styles.css": "./src/styles/globals.css"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "next": "^16",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.4.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^28.0.1",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  }
+}

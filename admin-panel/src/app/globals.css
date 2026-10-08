@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+/* Design tokens, typography and base styles, so both applications look like
+   one system. Imported after Tailwind because it uses @theme. */
+@import "@hagamra/shared/styles.css";

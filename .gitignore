@@ -1,0 +1,27 @@
+# Dependencies — every workspace installs through the root.
+node_modules/
+
+# Build output
+.next/
+dist/
+out/
+*.tsbuildinfo
+
+# Environment — may hold credentials. Never commit.
+.env
+.env.*
+!.env.example
+
+# Tooling fetched at setup time
+tools/composer.phar
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Logs
+*.log
+npm-debug.log*

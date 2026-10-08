@@ -1,0 +1,19 @@
+{
+  "name": "hagamra",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Hajj & Umrah management system — Laravel backend with two Next.js clients",
+  "workspaces": [
+    "packages/*",
+    "admin-panel",
+    "company-dashboard",
+    "mcp-server"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test:backend": "cd backend && php artisan test",
+    "test:all": "npm run test --workspaces --if-present && npm run test:backend"
+  }
+}

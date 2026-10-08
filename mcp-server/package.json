@@ -1,0 +1,30 @@
+{
+  "name": "hagamra-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server exposing the Hagamra Hajj & Umrah API to an AI agent",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "hagamra-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,377 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+
+import { describeError, type HagamraClient } from '../lib/client.js';
+import { buildPayload, fail, ok, okList } from '../lib/payload.js';
+import type { Permission, User } from '../types.js';
+
+/**
+ * Employee accounts and their permissions.
+ *
+ * The most sensitive tools here, and the ones with the least room to improvise:
+ *
+ *   - there is no `role` parameter anywhere. An account created through this
+ *     server is an employee of the caller's own company, and nothing the agent
+ *     sends can make it anything else;
+ *   - permission names are an allowlist. An invented one is refused;
+ *   - changing permissions is an owner-level act, separate from editing an
+ *     employee, so holding `employees.update` is not a route to granting
+ *     oneself the other fifteen permissions.
+ *
+ * None of that is enforced here — it is enforced by Laravel, which is the
+ * point. This file just avoids offering the agent parameters that would only
+ * ever be rejected.
+ */
+
+const PERMISSIONS = [
+  'employees.view',
+  'employees.create',
+  'employees.update',
+  'employees.delete',
+  'packages.view',
+  'packages.create',
+  'packages.update',
+  'packages.delete',
+  'hotels.view',
+  'hotels.create',
+  'hotels.update',
+  'hotels.delete',
+  'buses.view',
+  'buses.create',
+  'buses.update',
+  'buses.delete',
+] as const;
+
+export function registerEmployeeTools(server: McpServer, client: HagamraClient): void {
+  server.registerTool(
+    'hagamra_list_employees',
+    {
+      title: 'List employees',
+      description: `List the employee accounts in the signed-in account's company.
+
+Owners and super admins are not included — this covers employees only.
+
+Args:
+  - search (string, optional): matches name or e-mail
+  - is_active (boolean, optional)
+  - page / per_page (number, optional)
+
+Returns JSON: { total, page, last_page, count, employees: [...] }
+Each entry includes the permissions granted to that employee. Password hashes are never
+returned by the API.
+
+Needs the \`employees.view\` permission.`,
+      inputSchema: {
+        search: z.string().max(200).optional(),
+        is_active: z.boolean().optional(),
+        page: z.number().int().min(1).default(1),
+        per_page: z.number().int().min(1).max(100).default(25),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params) => {
+      try {
+        const page = await client.list<User>('employees', {
+          search: params.search,
+          is_active: params.is_active === undefined ? undefined : params.is_active ? 1 : 0,
+          page: params.page,
+          per_page: params.per_page,
+        });
+
+        return okList(page, 'employees');
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_get_employee',
+    {
+      title: 'Get an employee',
+      description: `Fetch one employee account by id, with their permissions.
+
+Returns 'Not found' when the id belongs to another company, to an owner, or to a super
+admin — the employee tools address employees only.
+
+Needs the \`employees.view\` permission.`,
+      inputSchema: { employee_id: z.number().int().positive() },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ employee_id }) => {
+      try {
+        return ok(await client.get<User>(`employees/${employee_id}`));
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_create_employee',
+    {
+      title: 'Create an employee',
+      description: `Create an employee account in the signed-in account's company.
+
+The account is always an employee of the caller's own company. There is no role
+parameter and no company parameter, because neither is the agent's to decide.
+
+NEVER invent a password. Ask the person for one, or ask them to set it themselves in
+the dashboard. Do not generate one and read it back in chat — it would then sit in the
+conversation history.
+
+Password rules: at least 10 characters with letters and numbers (12 with mixed case,
+numbers and symbols in production).
+
+Permissions may be granted at creation, but only an owner may do so. If the account
+this agent acts as is an employee, leave \`permissions\` out — the account will be
+created with none, and an owner can grant them afterwards.
+
+Needs the \`employees.create\` permission.`,
+      inputSchema: {
+        name: z.string().min(1).max(255).describe("The employee's full name."),
+        email: z.string().email().max(255).describe('Must not already be in use.'),
+        password: z
+          .string()
+          .min(10)
+          .max(255)
+          .describe('Supplied by the person, never generated by the agent.'),
+        phone: z.string().max(32).optional(),
+        is_active: z.boolean().optional().describe('Defaults to true.'),
+        permissions: z
+          .array(z.enum(PERMISSIONS))
+          .optional()
+          .describe('Owner-only. Omit unless the person asked for specific permissions.'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (params) => {
+      try {
+        const created = await client.post<User>('employees', buildPayload(params));
+
+        return ok(
+          created,
+          `Created employee #${created.id} "${created.name}" (${created.email}).`,
+        );
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_update_employee',
+    {
+      title: 'Update an employee',
+      description: `Change an employee's details. Only the fields you send are touched.
+
+This cannot change an employee's role, company or permissions — those fields do not
+exist here. Use hagamra_set_employee_permissions for permissions.
+
+To change a password, send the new one; omit the field to leave it alone. As with
+creation, never invent a password.
+
+Setting \`is_active\` to false suspends the account immediately: their existing session
+stops working on the next request. That is usually what "remove their access" means,
+and it is reversible — prefer it to deletion.
+
+Needs the \`employees.update\` permission.`,
+      inputSchema: {
+        employee_id: z.number().int().positive(),
+        name: z.string().min(1).max(255).optional(),
+        email: z.string().email().max(255).optional(),
+        password: z.string().min(10).max(255).optional(),
+        phone: z.string().max(32).nullable().optional(),
+        is_active: z.boolean().optional().describe('false suspends the account immediately.'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ employee_id, ...changes }) => {
+      try {
+        const payload = buildPayload(changes);
+
+        if (Object.keys(payload).length === 0) {
+          return fail('No changes were given. Supply at least one field to change.');
+        }
+
+        const updated = await client.put<User>(`employees/${employee_id}`, payload);
+
+        // The password is never echoed, only acknowledged.
+        const changed = Object.keys(payload).map((key) =>
+          key === 'password' ? 'password (changed)' : key,
+        );
+
+        return ok(
+          { ...updated },
+          `Updated employee #${updated.id}: ${changed.join(', ')}.`,
+        );
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_delete_employee',
+    {
+      title: 'Delete an employee',
+      description: `Delete an employee account.
+
+A soft delete: the account stops working immediately and disappears from listings, but
+is recoverable by an administrator, and the e-mail address becomes available again.
+
+Prefer suspending instead — hagamra_update_employee with is_active: false — unless the
+person clearly wants the account removed. Confirm first, naming the employee.
+
+An account cannot delete itself.
+
+Needs the \`employees.delete\` permission.`,
+      inputSchema: { employee_id: z.number().int().positive() },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ employee_id }) => {
+      try {
+        await client.delete(`employees/${employee_id}`);
+
+        return ok({ deleted: true, employee_id }, `Deleted employee #${employee_id}.`);
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_get_employee_permissions',
+    {
+      title: "Get an employee's permissions",
+      description: `List the permissions currently granted to one employee.
+
+Returns JSON: { permissions: ["packages.view", ...] }
+An empty list means the employee can do nothing in the system.
+
+Needs the \`employees.view\` permission.`,
+      inputSchema: { employee_id: z.number().int().positive() },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ employee_id }) => {
+      try {
+        return ok(await client.get<{ permissions: string[] }>(`employees/${employee_id}/permissions`));
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_set_employee_permissions',
+    {
+      title: "Replace an employee's permissions",
+      description: `Replace an employee's permissions with exactly the list you send.
+
+THIS REPLACES, IT DOES NOT ADD. Sending ["packages.view"] to someone who had five
+permissions leaves them with one. To add a permission, first read the current set with
+hagamra_get_employee_permissions, then send the old list plus the new entry.
+
+Sending [] revokes everything.
+
+Owner-level: an employee cannot change permissions, including their own, even with
+\`employees.update\`. If this agent acts as an employee the call is refused — say that
+their company owner has to do it, and do not retry.
+
+Valid names (any other is rejected):
+  employees.view | .create | .update | .delete
+  packages.view  | .create | .update | .delete
+  hotels.view    | .create | .update | .delete
+  buses.view     | .create | .update | .delete`,
+      inputSchema: {
+        employee_id: z.number().int().positive(),
+        permissions: z
+          .array(z.enum(PERMISSIONS))
+          .describe('The complete set. Replaces whatever the employee had. [] revokes all.'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async ({ employee_id, permissions }) => {
+      try {
+        const result = await client.put<{ permissions: string[] }>(
+          `employees/${employee_id}/permissions`,
+          { permissions },
+        );
+
+        return ok(
+          result,
+          permissions.length === 0
+            ? `Revoked all permissions from employee #${employee_id}.`
+            : `Employee #${employee_id} now has exactly ${result.permissions.length} permission(s).`,
+        );
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+
+  server.registerTool(
+    'hagamra_list_permissions',
+    {
+      title: 'List available permissions',
+      description: `List every permission the system defines, grouped by resource.
+
+Use this when you need the exact names, rather than guessing them. The list comes from
+the backend, so it stays correct if permissions are added later.`,
+      inputSchema: {},
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async () => {
+      try {
+        const result = await client.get<{
+          permissions: Permission[];
+          groups: Record<string, string[]>;
+        }>('permissions');
+
+        return ok(result);
+      } catch (error) {
+        return fail(describeError(error));
+      }
+    },
+  );
+}
