@@ -140,6 +140,9 @@ export const PERMISSION_ACTION_LABELS: Record<string, string> = {
   create: 'إضافة',
   update: 'تعديل',
   delete: 'حذف',
+  // Not a verb like the others: it is the right to hand the rest of this list
+  // out, so it is named for what it is rather than squeezed into the pattern.
+  permissions: 'منح الصلاحيات',
 };
 
 /**

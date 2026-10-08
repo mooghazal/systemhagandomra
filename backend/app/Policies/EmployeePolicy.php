@@ -58,12 +58,51 @@ class EmployeePolicy
     }
 
     /**
-     * Granting and revoking permissions is an owner-level act.
+     * Granting and revoking permissions.
+     *
+     * An owner always may. Anyone else needs `employees.permissions`, and is
+     * then bound by two rules that are what make the permission safe to hand
+     * out at all:
+     *
+     *   - never on their own account. Otherwise the permission is worth all
+     *     the others: grant yourself the rest and the set means nothing.
+     *   - never on a colleague who holds something they do not. Saving
+     *     replaces the whole set, so without this a delegate would silently
+     *     strip a colleague of a permission they were never able to grant
+     *     back — and "can he take this from me" would have a different answer
+     *     than "can he give it to me", which is not a rule anyone can keep in
+     *     their head.
+     *
+     * The second rule costs nothing in the ordinary case: a manager holding
+     * everything can manage everyone.
      */
     public function managePermissions(User $user, User $employee): bool
     {
-        return $this->grantPermissions($user)
-            && $this->isManageableEmployee($user, $employee);
+        if (! $this->grantPermissions($user) || ! $this->isManageableEmployee($user, $employee)) {
+            return false;
+        }
+
+        if ($this->isActiveOwner($user)) {
+            return true;
+        }
+
+        return ! $user->is($employee)
+            && $this->holdsAllOf($user, $employee->permissionNames()->all());
+    }
+
+    /**
+     * Whether `$user` may hand out exactly this set.
+     *
+     * Checked separately from managePermissions because the two ask different
+     * questions: that one is about the account being edited, this one about
+     * what is being written to it. A delegate passing the first still cannot
+     * grant beyond their own set.
+     *
+     * @param  array<int, string>  $permissions
+     */
+    public function grantExactly(User $user, array $permissions): bool
+    {
+        return $this->isActiveOwner($user) || $this->holdsAllOf($user, $permissions);
     }
 
     /**
@@ -82,17 +121,48 @@ class EmployeePolicy
      */
     public function manageCredentials(User $user, User $employee): bool
     {
-        return $this->grantPermissions($user)
-            && $this->isManageableEmployee($user, $employee);
+        /*
+         * Spelled out rather than delegating to grantPermissions().
+         *
+         * The two were the same check until granting became delegable. Had
+         * this kept calling it, adding `employees.permissions` would have
+         * handed every manager the ability to set a colleague's password —
+         * sign in as them, inherit everything they hold — which is the exact
+         * escalation the docblock above describes. Two rules that happen to
+         * agree are not one rule.
+         */
+        return $this->isActiveOwner($user) && $this->isManageableEmployee($user, $employee);
     }
 
     /**
-     * The same rule for an account that does not exist yet, used when a create
-     * request arrives with a permission list attached.
+     * Whether this account may grant permissions at all.
+     *
+     * Used on its own when a create request arrives with a permission list
+     * attached, for an account that does not exist yet.
      */
     public function grantPermissions(User $user): bool
     {
+        return $this->isActiveOwner($user)
+            || $user->hasPermissionTo(Permissions::EMPLOYEES_PERMISSIONS);
+    }
+
+    private function isActiveOwner(User $user): bool
+    {
         return $user->isOwner() && $user->is_active;
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    private function holdsAllOf(User $user, array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if (! $user->hasPermissionTo($permission)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isManageableEmployee(User $user, User $employee): bool

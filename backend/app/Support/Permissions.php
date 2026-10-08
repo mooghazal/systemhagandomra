@@ -16,6 +16,17 @@ final class Permissions
     public const EMPLOYEES_UPDATE = 'employees.update';
     public const EMPLOYEES_DELETE = 'employees.delete';
 
+    /**
+     * Granting and revoking other people's permissions.
+     *
+     * Delegable, unlike the credential powers next to it, but only downwards:
+     * the holder can hand out what they already hold and nothing more, and
+     * never to themselves. EmployeePolicy enforces both. Without those two
+     * rules this single permission would be worth all sixteen — grant yourself
+     * the rest, or grant a colleague more than you have and act through them.
+     */
+    public const EMPLOYEES_PERMISSIONS = 'employees.permissions';
+
     public const PACKAGES_VIEW = 'packages.view';
     public const PACKAGES_CREATE = 'packages.create';
     public const PACKAGES_UPDATE = 'packages.update';
@@ -43,6 +54,7 @@ final class Permissions
             self::EMPLOYEES_CREATE => ['employees', 'Create employees'],
             self::EMPLOYEES_UPDATE => ['employees', 'Update employees'],
             self::EMPLOYEES_DELETE => ['employees', 'Delete employees'],
+            self::EMPLOYEES_PERMISSIONS => ['employees', 'Grant permissions'],
 
             self::PACKAGES_VIEW => ['packages', 'View packages'],
             self::PACKAGES_CREATE => ['packages', 'Create packages'],

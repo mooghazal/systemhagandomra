@@ -44,6 +44,15 @@ class EmployeeController extends Controller
         // with no permissions, not a way to mint a fully-privileged colleague.
         if (! empty($permissions)) {
             $this->authorize('grantPermissions', User::class);
+
+            /*
+             * And bounded by what the creator holds. Create carries a password
+             * the creator chooses, so without this a delegate could mint an
+             * account with permissions beyond their own and simply sign into
+             * it — the long way round to the escalation every other rule here
+             * blocks.
+             */
+            $this->authorize('grantExactly', [User::class, $permissions]);
         }
 
         $employee = $this->employees->create($request->safe()->except('permissions'), $permissions);
@@ -119,6 +128,14 @@ class EmployeeController extends Controller
     public function syncPermissions(SyncEmployeePermissionsRequest $request, User $employee): JsonResponse
     {
         $this->authorize('managePermissions', $employee);
+
+        /*
+         * Who may be edited and what may be written to them are two questions,
+         * and a delegate can pass the first while failing the second — a
+         * manager holding half the catalogue may edit a colleague who holds
+         * less, but still cannot hand them the other half.
+         */
+        $this->authorize('grantExactly', [User::class, $request->permissionNames()]);
 
         $employee = $this->employees->syncPermissions($employee, $request->permissionNames());
 

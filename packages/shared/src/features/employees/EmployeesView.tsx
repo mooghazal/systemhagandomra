@@ -79,7 +79,15 @@ export function EmployeesView() {
 
   // Only an owner can reach the permission endpoints; a super admin passes
   // too, via Gate::before on the backend.
-  const mayManagePermissions = user.role === 'owner' || isSuperAdmin;
+  /*
+   * Granting is delegable now, so this is no longer a question of role.
+   *
+   * It still only decides whether the button is drawn. Laravel applies the
+   * rules that matter — not on yourself, and nothing you do not hold yourself
+   * — and refuses the request regardless of what this panel offered.
+   */
+  const mayManagePermissions =
+    user.role === 'owner' || isSuperAdmin || can('employees.permissions');
 
   useEffect(() => {
     if (!isSuperAdmin) return;
