@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { Readex_Pro } from 'next/font/google';
 
+import { NONCE_HEADER } from '@hagamra/shared/lib/csp';
 import { ThemeProvider, themeScript } from '@hagamra/shared/components/ui/Theme';
 import { ToastProvider } from '@hagamra/shared/components/ui/Toast';
 
@@ -32,7 +34,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /*
+   * The nonce the edge put on this request, so the inline script below is
+   * named by the Content-Security-Policy instead of being blocked by it.
+   *
+   * Reading a header makes this layout dynamic, which every page behind a
+   * session already was.
+   */
+  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
+
   return (
     // suppressHydrationWarning: the inline script below sets data-theme before
     // React runs, so the server markup and the first client render differ here
@@ -44,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           * then corrects itself — a white flash on every navigation for anyone
           * using dark mode.
           */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
         <ThemeProvider>

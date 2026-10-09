@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { NONCE_HEADER, buildCsp, createNonce } from '@hagamra/shared/lib/csp';
+
 /**
  * The first gate on every page (spec §7).
+ *
+ * Next calls this a proxy; it used to be called middleware, and the file had
+ * to be renamed with it. Not to be confused with lib/laravel-proxy in the
+ * shared package, which forwards API calls to Laravel — this one never leaves
+ * the edge and only decides whether a page is allowed to render at all.
  *
  * It checks only that a session cookie exists — whether that token is still
  * valid is Laravel's call, and the layout asks it on every load. A cheap check
@@ -16,12 +23,36 @@ import { NextRequest, NextResponse } from 'next/server';
    localhost share a cookie jar, because browsers ignore the port. */
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? 'hagamra_token';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const signedIn = Boolean(request.cookies.get(COOKIE_NAME)?.value);
 
+  /*
+   * A nonce for this request, and the policy that names it.
+   *
+   * It has to be made here rather than in next.config because it must be new
+   * every time — a nonce an attacker can predict is not a nonce. The layout
+   * reads it back off the request header to put on its one inline script, and
+   * Next puts it on the scripts it emits itself.
+   */
+  const nonce = createNonce();
+  const csp = buildCsp(nonce, process.env.NODE_ENV === 'production');
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(NONCE_HEADER, nonce);
+
+  const withPolicy = (response: NextResponse): NextResponse => {
+    response.headers.set('Content-Security-Policy', csp);
+
+    return response;
+  };
+
+  const onwards = () => withPolicy(NextResponse.next({ request: { headers: requestHeaders } }));
+
   if (pathname === '/login') {
-    return signedIn ? NextResponse.redirect(new URL('/', request.url)) : NextResponse.next();
+    return signedIn
+      ? withPolicy(NextResponse.redirect(new URL('/', request.url)))
+      : onwards();
   }
 
   if (!signedIn) {
@@ -30,10 +61,10 @@ export function middleware(request: NextRequest) {
     // Remember where they were headed so the login can return them there.
     if (pathname !== '/') login.searchParams.set('next', pathname + search);
 
-    return NextResponse.redirect(login);
+    return withPolicy(NextResponse.redirect(login));
   }
 
-  return NextResponse.next();
+  return onwards();
 }
 
 export const config = {

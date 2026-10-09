@@ -8,31 +8,15 @@
  * panel invisibly on top of a decoy and have the admin's own clicks land on
  * whatever control they chose.
  *
- * `Content-Security-Policy` here covers framing, form targets, plugins and the
- * base tag — the directives that can be set without threading a nonce through
- * every inline script Next emits. A `script-src` policy would be worth having
- * too, but it has to come with nonces or it either breaks the app or is
- * trivially bypassed, so it is a separate job rather than a line here.
+ * The Content-Security-Policy is not here. It needs a nonce, which has to be
+ * new on every request, so it is built at the edge in each app's proxy.ts —
+ * see lib/csp. These are the headers whose value never changes, which is why
+ * a static list is the right place for them.
  */
 export const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
   // Two spellings of the same rule. frame-ancestors is the one that counts;
   // X-Frame-Options is kept for anything that does not implement it.
   { key: 'X-Frame-Options', value: 'DENY' },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "frame-ancestors 'none'",
-      // Nothing on these pages submits anywhere but back to itself.
-      "form-action 'self'",
-      // A <base> tag injected into the document could otherwise re-point every
-      // relative URL on the page, including the ones the panel posts to.
-      "base-uri 'none'",
-      "object-src 'none'",
-      // Uploaded images are served from the Laravel origin.
-      'upgrade-insecure-requests',
-    ].join('; '),
-  },
-
   // Stops a response being treated as a type it did not declare — the usual
   // route from "an image was uploaded" to "a script ran".
   { key: 'X-Content-Type-Options', value: 'nosniff' },
