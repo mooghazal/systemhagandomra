@@ -36,6 +36,62 @@ class StatsController extends Controller
     }
 
     /**
+     * GET /api/stats/packages-by-type
+     *
+     * How the catalogue breaks down by trip type — the one question a count
+     * cannot answer. "Ninety packages" says nothing about whether they are all
+     * Ramadan Umrah and the company has nothing for Hajj.
+     *
+     * Gated on the same permission as the package list it summarises: a
+     * breakdown is a weaker read of the same data, and it should not be a way
+     * to see around that permission.
+     */
+    public function packagesByType(): JsonResponse
+    {
+        $user = $this->tenant->user();
+
+        $this->authorize('viewAny', Package::class);
+
+        $query = Package::query();
+
+        if (! $user->isSuperAdmin()) {
+            $query->where('company_id', $user->company_id);
+        }
+
+        /*
+         * trip_type is free text, so this is whatever companies have actually
+         * typed — not a fixed list. An untyped package is its own bucket
+         * rather than being dropped: "forty with no type set" is worth seeing.
+         */
+        $rows = $query->selectRaw('COALESCE(NULLIF(TRIM(trip_type), ""), ?) as label, COUNT(*) as total', ['غير محدّد'])
+            ->groupBy('label')
+            ->orderByDesc('total')
+            ->get();
+
+        /*
+         * More than a handful of bars stops being readable, and trip_type has
+         * no ceiling. The tail folds into one bucket rather than being cut,
+         * so the totals still add up to the catalogue.
+         */
+        $top = $rows->take(self::MAX_SLICES);
+        $rest = $rows->slice(self::MAX_SLICES);
+
+        $breakdown = $top->map(fn ($row) => [
+            'label' => (string) $row->label,
+            'total' => (int) $row->total,
+        ])->values()->all();
+
+        if ($rest->isNotEmpty()) {
+            $breakdown[] = ['label' => 'أخرى', 'total' => (int) $rest->sum('total')];
+        }
+
+        return ApiResponse::success(['breakdown' => $breakdown]);
+    }
+
+    /** Bars beyond this fold into "أخرى". */
+    private const MAX_SLICES = 6;
+
+    /**
      * @return array<string, int>
      */
     private function systemStats(): array

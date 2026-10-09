@@ -230,6 +230,16 @@ export const auditLogsService = {
 // -- Dashboard --------------------------------------------------------------
 
 export const statsService = {
+  /**
+   * How the catalogue breaks down by trip type.
+   *
+   * Separate from get(): the counts are needed on every dashboard, this is
+   * needed only where the chart renders, and it carries the one permission
+   * the counts do not individually require.
+   */
+  packagesByType: () =>
+    api.get<{ breakdown: Array<{ label: string; total: number }> }>('stats/packages-by-type'),
+
   get: (signal?: AbortSignal) => api.get<Stats>('stats', undefined, signal),
 };
 

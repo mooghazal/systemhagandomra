@@ -54,6 +54,10 @@ Route::prefix('auth')->group(function () {
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
+
+    // The dashboard's figures, and the one breakdown behind them.
+    Route::get('stats/packages-by-type', [StatsController::class, 'packagesByType'])
+        ->name('stats.packages-by-type');
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     // Dashboard counters. Scoped to the caller's company unless they are a

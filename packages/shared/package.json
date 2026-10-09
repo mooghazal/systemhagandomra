@@ -12,6 +12,7 @@
     "./components/brand/*": "./src/components/brand/*.tsx",
     "./components/layout/*": "./src/components/layout/*.tsx",
     "./components/ui/*": "./src/components/ui/*.tsx",
+    "./components/charts/*": "./src/components/charts/*.tsx",
     "./components/forms/*": "./src/components/forms/*.tsx",
     "./components/upload/*": "./src/components/upload/*.tsx",
     "./components/tables/*": "./src/components/tables/*.tsx",

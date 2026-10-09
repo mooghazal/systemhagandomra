@@ -23,6 +23,7 @@ import {
   PageHeader,
   accentStyle,
 } from '@hagamra/shared/components/ui/Primitives';
+import { BreakdownBars, type Slice } from '@hagamra/shared/components/charts/BreakdownBars';
 import { ErrorState } from '@hagamra/shared/components/ui/Feedback';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -80,6 +81,7 @@ export function DashboardView() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [statsError, setStatsError] = useState<ApiError | null>(null);
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
+  const [breakdown, setBreakdown] = useState<Slice[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -112,6 +114,23 @@ export function DashboardView() {
 
     return () => controller.abort();
   }, [isSuperAdmin, user.role]);
+
+  /*
+   * Only where the packages may be read. The endpoint refuses otherwise,
+   * so asking would be a guaranteed 403 on every dashboard load.
+   */
+  const mayReadPackages = can('packages.view');
+
+  useEffect(() => {
+    if (!mayReadPackages) return;
+
+    statsService
+      .packagesByType()
+      .then((result) => setBreakdown(result.breakdown))
+      // A missing chart is a smaller problem than a dashboard that will not
+      // render, so this one fails quietly.
+      .catch(() => setBreakdown([]));
+  }, [mayReadPackages]);
 
   const tiles: Tile[] = [
     { key: 'companies', label: 'الشركات', icon: Building2, href: '/companies', accent: 'companies', show: isSuperAdmin },
@@ -180,6 +199,25 @@ export function DashboardView() {
           })}
         </div>
       ) : null}
+
+      {/*
+        Only once there is something to show. An empty chart on a new account
+        is a box explaining that it has nothing to say, which is worse than
+        not being there — the counts above already report an empty catalogue.
+      */}
+      {breakdown !== null && breakdown.length > 0 && (
+        <Card className="mb-6 p-5">
+          <h2 className="mb-1 text-sm font-semibold text-foreground">الباقات حسب نوع الرحلة</h2>
+          <p className="mb-4 text-xs text-muted">
+            توزيع الباقات المسجّلة — يوضّح لو كان فيه نوع رحلة ناقص من العرض.
+          </p>
+
+          <BreakdownBars
+            data={breakdown}
+            caption="عدد الباقات لكل نوع رحلة"
+          />
+        </Card>
+      )}
 
       <div className={canSeeTrail ? 'grid gap-4 lg:grid-cols-5' : ''}>
         {quickActions.length > 0 && (

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -14,7 +14,7 @@ import {
 import { DashboardView } from './DashboardView';
 
 vi.mock('@hagamra/shared/services', () => ({
-  statsService: { get: vi.fn() },
+  statsService: { get: vi.fn(), packagesByType: vi.fn() },
   auditLogsService: { getAll: vi.fn() },
 }));
 
@@ -34,6 +34,7 @@ describe('DashboardView', () => {
       companies: 12, owners: 12, employees: 40, packages: 90, hotels: 30, buses: 15,
     });
     auditLogs.getAll.mockResolvedValue(paginated([]));
+    stats.packagesByType.mockResolvedValue({ breakdown: [] });
   });
 
   it('greets the person by name', async () => {
@@ -115,5 +116,65 @@ describe('DashboardView', () => {
 
     // Viewing is not creating.
     expect(screen.queryByText('إضافة سريعة')).toBeNull();
+  });
+  // -- The breakdown chart -------------------------------------------------
+
+  it('draws the breakdown once there is something to draw', async () => {
+    stats.packagesByType.mockResolvedValue({
+      breakdown: [{ label: 'عمرة', total: 12 }, { label: 'حج', total: 4 }],
+    });
+
+    renderScreen(<DashboardView />);
+
+    expect(await screen.findByText('الباقات حسب نوع الرحلة')).toBeTruthy();
+  });
+
+  it('prints every value rather than leaving it to be estimated from a bar', async () => {
+    stats.packagesByType.mockResolvedValue({
+      breakdown: [{ label: 'عمرة', total: 12 }, { label: 'حج', total: 4 }],
+    });
+
+    renderScreen(<DashboardView />);
+
+    await screen.findByText('الباقات حسب نوع الرحلة');
+
+    // Scoped to the chart: the stat tiles above carry numbers of their own.
+    const chart = within(screen.getByRole('figure'));
+
+    // Twice each, and that is the design: once beside the bar, once in the
+    // table that makes the same data available without the geometry.
+    expect(chart.getAllByText('12')).toHaveLength(2);
+    expect(chart.getAllByText('4')).toHaveLength(2);
+  });
+
+  it('offers the same figures as a table, not only as geometry', async () => {
+    // A chart that exists only as bar lengths is unavailable to a screen
+    // reader, and unreadable to anyone who wants the number.
+    stats.packagesByType.mockResolvedValue({ breakdown: [{ label: 'عمرة', total: 12 }] });
+
+    renderScreen(<DashboardView />);
+
+    await screen.findByText('الباقات حسب نوع الرحلة');
+
+    expect(screen.getByRole('table', { name: /عدد الباقات لكل نوع/ })).toBeTruthy();
+  });
+
+  it('draws nothing at all when the catalogue is empty', async () => {
+    // An empty chart is a box explaining it has nothing to say.
+    stats.packagesByType.mockResolvedValue({ breakdown: [] });
+
+    renderScreen(<DashboardView />);
+
+    await screen.findByText('الباقات');
+
+    expect(screen.queryByText('الباقات حسب نوع الرحلة')).toBeNull();
+  });
+
+  it('does not ask for the breakdown without the package permission', async () => {
+    renderScreen(<DashboardView />, employeeSession(['hotels.view']));
+
+    await screen.findByText('الفنادق');
+
+    expect(stats.packagesByType).not.toHaveBeenCalled();
   });
 });
