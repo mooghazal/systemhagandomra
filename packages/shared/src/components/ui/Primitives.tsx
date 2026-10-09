@@ -1,6 +1,13 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ImageOff,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { cn } from '../../lib/cn';
@@ -164,22 +171,82 @@ export function Table({ children, className }: { children: React.ReactNode; clas
     // Horizontal scroll rather than a squeezed table: on a phone a wide table
     // stays readable when it can be pushed sideways.
     <div className="w-full overflow-x-auto">
-      <table className={cn('w-full border-collapse text-sm', className)}>{children}</table>
+      <table className={cn('group/table w-full border-collapse text-sm', className)}>{children}</table>
     </div>
   );
 }
 
+const TH_CLASSES = cn(
+  'border-b border-border-subtle bg-surface-muted/50 px-4 py-2.5 text-start',
+  'text-[0.68rem] leading-normal font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap',
+);
+
 export function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
+  return (
+    <th scope="col" className={cn(TH_CLASSES, className)}>
+      {children}
+    </th>
+  );
+}
+
+/**
+ * A column header that sorts.
+ *
+ * `aria-sort` rather than only an arrow: a screen reader announces the state
+ * from that attribute, and an icon is invisible to one.
+ *
+ * The sort itself happens in Laravel, against an allowlist of columns — the
+ * value here reaches an ORDER BY clause, which the query builder does not
+ * parameterise, so a column name the backend does not recognise is ignored
+ * rather than trusted.
+ */
+export function SortableTh({
+  column,
+  active,
+  direction,
+  onSort,
+  children,
+  className,
+}: {
+  column: string;
+  /** The column currently sorted by, which may be another one. */
+  active: string | null;
+  direction: 'asc' | 'desc';
+  onSort: (column: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const isActive = active === column;
+
   return (
     <th
       scope="col"
-      className={cn(
-        'border-b border-border-subtle bg-surface-muted/50 px-4 py-2.5 text-start',
-        'text-[0.68rem] leading-normal font-semibold tracking-[0.06em] text-muted uppercase whitespace-nowrap',
-        className,
-      )}
+      aria-sort={isActive ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={cn(TH_CLASSES, 'p-0', className)}
     >
-      {children}
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          'flex w-full items-center gap-1.5 px-4 py-2.5 text-start transition-colors',
+          'hover:text-foreground',
+          isActive && 'text-foreground',
+        )}
+      >
+        {children}
+
+        {isActive ? (
+          direction === 'asc' ? (
+            <ArrowUp className="size-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <ArrowDown className="size-3.5 shrink-0" aria-hidden="true" />
+          )
+        ) : (
+          // Held at low opacity rather than hidden, so the column does not
+          // change width the moment it is sorted.
+          <ArrowUpDown className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/table:opacity-40" aria-hidden="true" />
+        )}
+      </button>
     </th>
   );
 }

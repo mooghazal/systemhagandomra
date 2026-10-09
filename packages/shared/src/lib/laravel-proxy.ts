@@ -78,6 +78,10 @@ const FORWARDED_REQUEST_HEADERS = ['content-type', 'user-agent'];
  */
 const FORWARDED_RESPONSE_HEADERS = [
   'content-type',
+  // Carries the download's filename, which Laravel builds with the resource's
+  // Arabic name and today's date. Always an attachment either way — the
+  // fallback below sets that when upstream says nothing.
+  'content-disposition',
   // So a client can tell a throttle from a refusal.
   'retry-after',
   'x-ratelimit-limit',
@@ -188,7 +192,9 @@ async function forward(request: NextRequest, path: string[]): Promise<NextRespon
    * instead of running it, so a response that somehow carries markup cannot
    * execute on the panel's own origin.
    */
-  responseHeaders.set('Content-Disposition', 'attachment');
+  if (!responseHeaders.has('Content-Disposition')) {
+    responseHeaders.set('Content-Disposition', 'attachment');
+  }
   responseHeaders.set('X-Content-Type-Options', 'nosniff');
 
   // A 3xx with an upstream Location would make this route an open redirector

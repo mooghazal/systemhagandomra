@@ -269,7 +269,7 @@ describe('PackagesView', () => {
   });
 
   it('deletes only after the confirmation is accepted', async () => {
-    service.delete.mockResolvedValue(undefined);
+    service.delete.mockResolvedValue(null);
 
     const user = userEvent.setup();
 
@@ -300,5 +300,64 @@ describe('PackagesView', () => {
 
     // Nobody can guess which company a package belongs to, so it is asked.
     expect(screen.getByLabelText(/الشركة/)).toBeTruthy();
+  });
+  // -- Sorting -------------------------------------------------------------
+
+  it('asks the backend to sort, rather than reordering the page', async () => {
+    /*
+     * A page holds fifteen rows out of however many exist. Sorting those
+     * fifteen in the browser would order the page rather than the list — it
+     * looks like it worked and is wrong.
+     */
+    const user = userEvent.setup();
+
+    renderScreen(<PackagesView />);
+    await screen.findByText('عمرة رمضان');
+
+    await user.click(screen.getByRole('button', { name: /السعر/ }));
+
+    await waitFor(() =>
+      expect(service.getAll).toHaveBeenCalledWith(
+        expect.objectContaining({ sort: 'price', direction: 'asc' }),
+        expect.anything(),
+      ));
+  });
+
+  it('reverses the direction when the same column is clicked again', async () => {
+    const user = userEvent.setup();
+
+    renderScreen(<PackagesView />);
+    await screen.findByText('عمرة رمضان');
+
+    /*
+     * Re-queried after every click. The table is replaced by its skeleton
+     * while the next page is fetched, so a node captured beforehand is
+     * detached by the time the second click lands — and clicking a detached
+     * node does nothing at all.
+     */
+    const price = () => screen.getByRole('button', { name: /السعر/ });
+    const sortState = () => price().closest('th')?.getAttribute('aria-sort');
+
+    await user.click(price());
+    await waitFor(() => expect(sortState()).toBe('ascending'));
+
+    await user.click(price());
+    await waitFor(() => expect(sortState()).toBe('descending'));
+  });
+
+  it('announces the sorted column to a screen reader', async () => {
+    // An arrow is invisible to one; aria-sort is what it reads.
+    const user = userEvent.setup();
+
+    renderScreen(<PackagesView />);
+    await screen.findByText('عمرة رمضان');
+
+    const name = screen.getByRole('button', { name: /الاسم/ });
+
+    expect(name.closest('th')?.getAttribute('aria-sort')).toBe('none');
+
+    await user.click(name);
+
+    await waitFor(() => expect(name.closest('th')?.getAttribute('aria-sort')).toBe('ascending'));
   });
 });

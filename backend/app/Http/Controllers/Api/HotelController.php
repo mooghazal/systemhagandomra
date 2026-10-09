@@ -9,8 +9,10 @@ use App\Http\Resources\HotelResource;
 use App\Models\Hotel;
 use App\Services\HotelService;
 use App\Support\ApiResponse;
+use App\Support\CsvExport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * See PackageController for the shape; HotelService holds the logic shared
@@ -69,5 +71,34 @@ class HotelController extends Controller
         $this->hotels->delete($hotel);
 
         return ApiResponse::success(null);
+    }
+    /**
+     * GET /api/hotels/export
+     *
+     * The same rows the listing would show — same filters, same sort, same
+     * tenant scope — without the paging.
+     *
+     * Gated on the permission that governs reading them rather than one of
+     * its own: an export is a read, and anyone who can page through the
+     * list can already copy it out by hand.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Hotel::class);
+
+        return CsvExport::stream(
+            $this->hotels->query($request->query()),
+            [
+                'الاسم' => 'name',
+                'الموقع' => 'location',
+                'التقييم' => 'rating',
+                'المسافة من الحرم' => 'distance_from_haram',
+                'المسافة من المسجد النبوي' => 'distance_from_masjid_nabawi',
+                'نوع الغرفة' => 'room_type',
+                'المزايا' => 'features',
+                'نشط' => 'is_active',
+            ],
+            'فنادق-'.now()->format('Y-m-d').'.csv',
+        );
     }
 }

@@ -71,6 +71,18 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     $writes = ['store', 'update', 'destroy'];
 
+    /*
+     * Before the resource routes, not after.
+     *
+     * `apiResource` registers `GET {resource}/{id}`, and "export" is a
+     * perfectly good id as far as the router is concerned — declared second,
+     * these would never be reached and the request would arrive at show()
+     * looking for a package called "export".
+     */
+    Route::get('packages/export', [PackageController::class, 'export'])->name('packages.export');
+    Route::get('hotels/export', [HotelController::class, 'export'])->name('hotels.export');
+    Route::get('buses/export', [BusController::class, 'export'])->name('buses.export');
+
     Route::apiResource('packages', PackageController::class)
         ->middlewareFor($writes, 'throttle:writes');
     Route::apiResource('hotels', HotelController::class)

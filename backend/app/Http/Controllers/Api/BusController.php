@@ -9,8 +9,10 @@ use App\Http\Resources\BusResource;
 use App\Models\Bus;
 use App\Services\BusService;
 use App\Support\ApiResponse;
+use App\Support\CsvExport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * See PackageController for the shape; BusService holds the logic shared with
@@ -69,5 +71,32 @@ class BusController extends Controller
         $this->buses->delete($bus);
 
         return ApiResponse::success(null);
+    }
+    /**
+     * GET /api/buses/export
+     *
+     * The same rows the listing would show — same filters, same sort, same
+     * tenant scope — without the paging.
+     *
+     * Gated on the permission that governs reading them rather than one of
+     * its own: an export is a read, and anyone who can page through the
+     * list can already copy it out by hand.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Bus::class);
+
+        return CsvExport::stream(
+            $this->buses->query($request->query()),
+            [
+                'الاسم' => 'name',
+                'النوع' => 'type',
+                'السعة' => 'capacity',
+                'الموديل' => 'model',
+                'المزايا' => 'features',
+                'نشطة' => 'is_active',
+            ],
+            'حافلات-'.now()->format('Y-m-d').'.csv',
+        );
     }
 }

@@ -40,9 +40,16 @@ abstract class CompanyResourceService
     abstract protected function applyFilters(Builder $query, array $filters): Builder;
 
     /**
+     * The filtered, sorted query behind a listing — without the paging.
+     *
+     * Shared by paginate() and the CSV export, so an export carries exactly
+     * the rows the person was looking at. Two code paths building the same
+     * filters is how an export quietly starts disagreeing with the screen it
+     * was taken from.
+     *
      * @param  array<string, mixed>  $filters
      */
-    public function paginate(array $filters = []): LengthAwarePaginator
+    public function query(array $filters = []): Builder
     {
         $query = $this->newQuery();
 
@@ -69,12 +76,20 @@ abstract class CompanyResourceService
 
         $this->applySort($query, $filters);
 
+        return $query->with('company');
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function paginate(array $filters = []): LengthAwarePaginator
+    {
         $perPage = min(
             max((int) ($filters['per_page'] ?? 15), 1),
             self::MAX_PER_PAGE
         );
 
-        return $query->with('company')
+        return $this->query($filters)
             ->paginate($perPage)
             ->withQueryString();
     }

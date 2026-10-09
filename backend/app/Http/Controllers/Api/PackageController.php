@@ -9,8 +9,10 @@ use App\Http\Resources\PackageResource;
 use App\Models\Package;
 use App\Services\PackageService;
 use App\Support\ApiResponse;
+use App\Support\CsvExport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Thin by design: authorise, validate, delegate, present.
@@ -75,5 +77,36 @@ class PackageController extends Controller
         $this->packages->delete($package);
 
         return ApiResponse::success(null);
+    }
+    /**
+     * GET /api/packages/export
+     *
+     * The same rows the listing would show — same filters, same sort, same
+     * tenant scope — without the paging.
+     *
+     * Gated on the permission that governs reading them rather than one of
+     * its own: an export is a read, and anyone who can page through the
+     * list can already copy it out by hand.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Package::class);
+
+        return CsvExport::stream(
+            $this->packages->query($request->query()),
+            [
+                'الاسم' => 'name',
+                'السعر' => 'price',
+                'العملة' => 'currency',
+                'عدد الأيام' => 'days',
+                'نوع الرحلة' => 'trip_type',
+                'الوجهة' => 'location',
+                'تاريخ البداية' => 'start_date',
+                'تاريخ النهاية' => 'end_date',
+                'المزايا' => 'features',
+                'نشطة' => 'is_active',
+            ],
+            'باقات-'.now()->format('Y-m-d').'.csv',
+        );
     }
 }

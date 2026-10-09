@@ -4,15 +4,17 @@ import { Bus as BusIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { BUS_FEATURES, FeatureSelector } from '@hagamra/shared/components/forms/FeatureSelector';
+import { ExportButton } from '@hagamra/shared/components/tables/ExportButton';
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
 import { Button } from '@hagamra/shared/components/ui/Button';
 import { ConfirmDialog, Dialog } from '@hagamra/shared/components/ui/Dialog';
 import { Checkbox, Field, Input, NumberInput, Select, Textarea } from '@hagamra/shared/components/ui/Field';
-import { Badge, PageHeader, Td, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
+import { Badge, PageHeader, Td, SortableTh, Th, Thumb, Tr, Value } from '@hagamra/shared/components/ui/Primitives';
 import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/upload/ImageUploader';
 import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
+import { useSort } from '@hagamra/shared/hooks/useSort';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
@@ -48,9 +50,12 @@ export function BusesView() {
   const { can, isSuperAdmin } = useSession();
   const toast = useToast();
 
+  // Ordering happens in Laravel; this only decides which column to ask for.
   const state = useResource<Bus>(
     useCallback((query, signal) => busesService.getAll(query, signal), []),
   );
+
+  const sort = useSort(state);
 
   const [editing, setEditing] = useState<Bus | null>(null);
   const [creating, setCreating] = useCreateFromUrl(can('buses.create'));
@@ -182,7 +187,16 @@ export function BusesView() {
         description="أسطول النقل"
         icon={BusIcon}
         accent="buses"
-        action={addButton}
+        action={
+          <div className="flex items-center gap-2">
+            <ExportButton
+              resource="buses"
+              filters={{ ...state.filters, search: state.search }}
+              disabled={state.items.length === 0}
+            />
+            {addButton}
+          </div>
+        }
       />
 
       <ResourceTable
@@ -207,9 +221,9 @@ export function BusesView() {
         columns={
           <>
             <Th className="w-16">الصورة</Th>
-            <Th>الاسم</Th>
+            <SortableTh column="name" {...sort}>الاسم</SortableTh>
             <Th>النوع</Th>
-            <Th>السعة</Th>
+            <SortableTh column="capacity" {...sort}>السعة</SortableTh>
             <Th>الموديل</Th>
             {isSuperAdmin && <Th>الشركة</Th>}
             <Th>الحالة</Th>
