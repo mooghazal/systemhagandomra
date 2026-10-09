@@ -20,6 +20,8 @@
     "./hooks/useErrorFocus": "./src/hooks/useErrorFocus.ts",
     "./hooks/useResource": "./src/hooks/useResource.ts",
     "./hooks/useSession": "./src/hooks/useSession.tsx",
+    "./hooks/useSelection": "./src/hooks/useSelection.ts",
+    "./lib/bulk": "./src/lib/bulk.ts",
     "./hooks/useSort": "./src/hooks/useSort.ts",
     "./lib/api": "./src/lib/api.ts",
     "./lib/cn": "./src/lib/cn.ts",

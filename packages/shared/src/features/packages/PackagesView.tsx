@@ -4,6 +4,7 @@ import { Package as PackageIcon, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { FeatureSelector, PACKAGE_FEATURES } from '@hagamra/shared/components/forms/FeatureSelector';
+import { BulkBar, SelectAllTh, SelectTd } from '@hagamra/shared/components/tables/BulkBar';
 import { ExportButton } from '@hagamra/shared/components/tables/ExportButton';
 import { ResourceTable, RowActions } from '@hagamra/shared/components/tables/ResourceTable';
 import { Button } from '@hagamra/shared/components/ui/Button';
@@ -14,10 +15,12 @@ import { ImageUploader, type ImageSelection } from '@hagamra/shared/components/u
 import { useCreateFromUrl } from '@hagamra/shared/hooks/useCreateFromUrl';
 import { useErrorFocus } from '@hagamra/shared/hooks/useErrorFocus';
 import { useResource } from '@hagamra/shared/hooks/useResource';
+import { useSelection } from '@hagamra/shared/hooks/useSelection';
 import { useSort } from '@hagamra/shared/hooks/useSort';
 import { useSession } from '@hagamra/shared/hooks/useSession';
 import { useToast } from '@hagamra/shared/components/ui/Toast';
 import { ApiError } from '@hagamra/shared/lib/api';
+import { describeBulk, runBulk } from '@hagamra/shared/lib/bulk';
 import { companiesService, packagesService } from '@hagamra/shared/services';
 import type { Company, Package } from '@hagamra/shared/types';
 import { formatDate, formatPrice, toFormData } from '@hagamra/shared/utils/format';
@@ -80,6 +83,43 @@ export function PackagesView() {
   );
 
   const sort = useSort(state);
+  const selection = useSelection(state.items);
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  /**
+   * Deleting several at once.
+   *
+   * One request each, so every record is authorised on its own and lands in
+   * the audit trail as its own entry — "deleted 12 things" is not what
+   * somebody reading that trail later needs.
+   */
+  /**
+   * Deleting several at once.
+   *
+   * One request each, so every record is authorised on its own and lands in
+   * the audit trail as its own entry — "deleted 12 things" is not what
+   * somebody reading that trail later needs. They run in sequence, because
+   * a dozen parallel writes is exactly what the write limiter exists to
+   * slow down.
+   */
+  async function removeSelected() {
+    setBusy(true);
+
+    const result = await runBulk(selection.ids, (id) => packagesService.delete(id));
+
+    // Both outcomes are reported, including a partial one: "mostly worked"
+    // is the case somebody actually has to act on.
+    if (result.failed > 0) {
+      toast.error(describeBulk(result, 'حذف'));
+    } else {
+      toast.success(describeBulk(result, 'حذف'));
+    }
+
+    selection.clear();
+    setBulkOpen(false);
+    setBusy(false);
+    state.reload();
+  }
 
   const [editing, setEditing] = useState<Package | null>(null);
   const [creating, setCreating] = useCreateFromUrl(can('packages.create'));
@@ -237,6 +277,15 @@ export function PackagesView() {
         }
       />
 
+      {can('packages.delete') && (
+        <BulkBar count={selection.count} onClear={selection.clear}>
+          <Button variant="danger" size="sm" onClick={() => setBulkOpen(true)} disabled={busy}>
+            <Trash2 className="size-4" aria-hidden="true" />
+            حذف المحدّد
+          </Button>
+        </BulkBar>
+      )}
+
       <ResourceTable
         state={state}
         searchPlaceholder="بحث باسم الباقة…"
@@ -258,6 +307,13 @@ export function PackagesView() {
         }
         columns={
           <>
+          {can('packages.delete') && (
+            <SelectAllTh
+              all={selection.allSelected}
+              some={selection.someSelected}
+              onToggle={selection.toggleAll}
+            />
+          )}
             <Th className="w-16">الصورة</Th>
             <SortableTh column="name" {...sort}>الاسم</SortableTh>
             <SortableTh column="price" {...sort}>السعر</SortableTh>
@@ -271,6 +327,13 @@ export function PackagesView() {
         }
         renderRow={(item) => (
           <Tr key={item.id}>
+            {can('packages.delete') && (
+              <SelectTd
+                checked={selection.isSelected(item.id)}
+                onToggle={() => selection.toggle(item.id)}
+                label={item.name}
+              />
+            )}
             <Td>
               <Thumb src={item.image_url} alt={item.name} />
             </Td>
@@ -488,8 +551,18 @@ export function PackagesView() {
         </div>
       </Dialog>
 
-      <ConfirmDialog
-        open={deleting !== null}
+        <ConfirmDialog
+  open={bulkOpen}
+  onClose={() => setBulkOpen(false)}
+  onConfirm={removeSelected}
+  title="حذف المحدّد"
+  message={`سيتم حذف ${selection.count} عنصر. يمكن استرجاعها لاحقاً من قاعدة البيانات، لكن لن تظهر في اللوحة.`}
+  confirmLabel="حذف الكل"
+  loading={busy}
+/>
+
+<ConfirmDialog
+  open={deleting !== null}
         onClose={() => setDeleting(null)}
         onConfirm={remove}
         itemName={deleting?.name}
