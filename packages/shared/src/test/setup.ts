@@ -1,3 +1,4 @@
+import React from 'react';
 import '@testing-library/react';
 
 import { afterEach, vi } from 'vitest';
@@ -64,4 +65,37 @@ export function dropEvent(files: File[]): Event {
   Object.defineProperty(event, 'dataTransfer', { value: transfer });
 
   return event;
+}
+
+/**
+ * The Next hooks every feature screen reaches for.
+ *
+ * Mocked here rather than per file because `vi.mock` is hoisted above
+ * everything else in a module — it cannot be wrapped in a helper, so the only
+ * way to write it once is to write it where every test file already loads.
+ *
+ * These are stubs, not fakes: the screens read the query string and render
+ * links, and none of the behaviour under test depends on routing actually
+ * happening.
+ */
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/',
+}));
+
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) =>
+    React.createElement('a', { href, ...rest }, children),
+}));
+
+/**
+ * jsdom has no layout, so it implements neither of these.
+ *
+ * useErrorFocus calls scrollIntoView to bring a rejected field into view, and
+ * the dialog measures itself. Both are no-ops without a viewport, but an
+ * absent function throws.
+ */
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn();
 }
